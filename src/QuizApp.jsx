@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Users, Clock, Smartphone } from 'lucide-react';
 import AdminPanel from './AdminPanel';
 import StudentQuizApp from './StudentQuizApp';
@@ -7,6 +7,17 @@ import { QuizProvider } from './QuizContext';
 // Main App Component with Home Page
 const QuizApp = () => {
   const [currentPage, setCurrentPage] = useState('home');
+
+  // Check for QR code join parameter on app load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCode = urlParams.get('join');
+    if (joinCode) {
+      // If QR code scanned, go directly to student portal
+      setCurrentPage('student');
+      // Don't clear the URL parameter here - let StudentQuizApp handle it
+    }
+  }, []);
 
   const HomePage = () => (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex flex-col justify-center items-center p-6">

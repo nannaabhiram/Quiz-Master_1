@@ -9,7 +9,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Proxy API requests to the React dev server
 app.use('/', createProxyMiddleware({
-  target: 'http://localhost:3001',
+  target: 'http://localhost:3000',
   changeOrigin: true,
   ws: true, // enable websocket proxy
 }));
@@ -17,5 +17,6 @@ app.use('/', createProxyMiddleware({
 const PORT = 3002;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Proxy server running on http://0.0.0.0:${PORT}`);
-  console.log(`Network access: http://192.168.1.11:${PORT}`);
+  console.log(`Network access: http://192.168.0.9:${PORT}`);
+  console.log(`Students should visit: http://192.168.0.9:${PORT}`);
 });

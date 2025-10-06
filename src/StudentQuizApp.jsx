@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Trophy, Clock, Smartphone, Wifi, User } from 'lucide-react';
 import { useQuiz } from './QuizContext';
+import TextToImage from './TextToImage';
+import ScreenshotProtection from './ScreenshotProtection';
 
 // Student Quiz App Component
 const StudentQuizApp = ({ onBack }) => {
@@ -8,7 +10,6 @@ const StudentQuizApp = ({ onBack }) => {
     quizState, 
     joinQuiz, 
     submitAnswer, 
-    nextQuestion: nextQuestionContext,
     students 
   } = useQuiz();
   
@@ -21,39 +22,88 @@ const StudentQuizApp = ({ onBack }) => {
   const [quizCode, setQuizCode] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [finalRank, setFinalRank] = useState(0);
+  const [studentId, setStudentId] = useState(null);
 
   // Get quiz data from context
-  const { isActive: quizActive, currentQuestion, questions, showResults } = quizState;
+  const { isActive: quizActive, isStarted: quizStarted, currentQuestion, questions, showResults } = quizState;
 
-  // Listen for quiz start from admin
+  // Check for QR code join parameter on component mount
   useEffect(() => {
-    if (quizActive && gameState === 'ready') {
-      setGameState('playing');
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCode = urlParams.get('join');
+    if (joinCode) {
+      setQuizCode(joinCode.toUpperCase()); // Auto-fill quiz code and convert to uppercase
+      // Clear the URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [quizActive, gameState]);
+  }, []);
 
-  // Listen for question changes from admin
+  // Add cross-tab communication
   useEffect(() => {
-    if (gameState === 'playing') {
-      handleNextQuestion();
-    }
-  }, [currentQuestion]);
+    const handleQuizStarted = (e) => {
+      console.log('Quiz started event received:', e.detail);
+      if (gameState === 'ready') {
+        setGameState('playing');
+        setTimeLeft(20);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      }
+    };
 
-  useEffect(() => {
-    if (gameState === 'ready') {
-      const checkQuizStart = setInterval(() => {
-        if (Math.random() > 0.97) {
-          setGameState('playing');
-          setScore(0);
-          setTimeLeft(20);
-          setSelectedAnswer(null);
-          setShowResult(false);
-        }
-      }, 1000);
+    const handleQuestionChanged = (e) => {
+      console.log('Question changed event received:', e.detail);
+      if (gameState === 'playing') {
+        setTimeLeft(20);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      }
+    };
 
-      return () => clearInterval(checkQuizStart);
-    }
+    // Listen for custom events
+    window.addEventListener('quizStarted', handleQuizStarted);
+    window.addEventListener('questionChanged', handleQuestionChanged);
+
+    return () => {
+      window.removeEventListener('quizStarted', handleQuizStarted);
+      window.removeEventListener('questionChanged', handleQuestionChanged);
+    };
   }, [gameState]);
+
+  // Fix the quiz start detection logic
+  useEffect(() => {
+    console.log('Quiz state check:', { 
+      gameState, 
+      quizActive, 
+      quizStarted,
+      questionsLength: questions.length,
+      currentQuestion 
+    });
+    
+    // Check if quiz is started and has questions
+    if (quizActive && quizStarted && questions.length > 0 && gameState === 'ready') {
+      console.log('Starting quiz - transitioning to playing state');
+      setGameState('playing');
+      setTimeLeft(20);
+      setSelectedAnswer(null);
+      setShowResult(false);
+    }
+  }, [quizActive, quizStarted, gameState, questions.length]);
+
+  // Update this useEffect to properly listen for admin question changes
+  useEffect(() => {
+    if (gameState === 'playing' && quizActive && quizStarted) {
+      // Reset for new question
+      setTimeLeft(20);
+      setSelectedAnswer(null);
+      setShowResult(false);
+      
+      // Check if quiz ended
+      if (currentQuestion >= questions.length) {
+        setFinalRank(Math.floor(Math.random() * 10) + 1);
+        setGameState('finished');
+      }
+    }
+  }, [currentQuestion, gameState, quizActive, quizStarted, questions.length]);
 
   useEffect(() => {
     let timer;
@@ -67,18 +117,22 @@ const StudentQuizApp = ({ onBack }) => {
 
   const handleJoinQuiz = () => {
     if (playerName.trim() && quizCode.trim()) {
-      // Call context joinQuiz function
-      joinQuiz(playerName, quizCode);
-      setIsConnected(true);
-      setGameState('ready');
+      // Call context joinQuiz function and get student ID
+      const newStudentId = Date.now();
+      setStudentId(newStudentId); // Store student ID
+      const success = joinQuiz(playerName, quizCode, newStudentId); // Pass student ID
+      if (success) {
+        setIsConnected(true);
+        setGameState('ready');
+      } else {
+        alert('Invalid quiz code or quiz not active!');
+      }
     }
   };
 
   const handleTimeUp = () => {
     setShowResult(true);
-    setTimeout(() => {
-      nextQuestionContext();
-    }, 2500);
+    // Don't auto-advance - wait for admin
   };
 
   const handleAnswerClick = (answerIndex) => {
@@ -93,22 +147,14 @@ const StudentQuizApp = ({ onBack }) => {
     
     if (answerIndex === questions[currentQuestion].correct) {
       const timeBonus = Math.floor((timeLeft / 20) * 500);
-      setScore(score + questions[currentQuestion].points + timeBonus);
-    }
-    
-    setTimeout(() => {
-      nextQuestionContext();
-    }, 2500);
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setTimeLeft(20);
-      setSelectedAnswer(null);
-      setShowResult(false);
+      const points = questions[currentQuestion].points + timeBonus;
+      setScore(score + points);
+      
+      // Submit answer to context for scoring with correct student ID
+      submitAnswer(studentId, answerIndex, timeLeft);
     } else {
-      setFinalRank(Math.floor(Math.random() * 10) + 1);
-      setGameState('finished');
+      // Still submit answer even if wrong
+      submitAnswer(studentId, answerIndex, timeLeft);
     }
   };
 
@@ -144,6 +190,13 @@ const StudentQuizApp = ({ onBack }) => {
     return `${baseClass} bg-gray-300 text-gray-600`;
   };
 
+  const handleScreenshotDetected = () => {
+    // End quiz session for this student
+    alert('Multiple screenshot attempts detected. Quiz session ended.');
+    resetQuiz();
+    onBack();
+  };
+
   if (gameState === 'waiting') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex flex-col justify-center items-center p-4">
@@ -167,10 +220,15 @@ const StudentQuizApp = ({ onBack }) => {
                   type="text"
                   placeholder="Enter quiz code"
                   value={quizCode}
-                  onChange={(e) => setQuizCode(e.target.value)}
+                  onChange={(e) => setQuizCode(e.target.value.toUpperCase())}
                   className="w-full p-4 border-2 border-gray-300 rounded-xl text-lg font-semibold text-center focus:border-blue-500 focus:outline-none"
                   maxLength="6"
                 />
+                {quizCode && (
+                  <p className="text-sm text-green-600 mt-1 text-center">
+                    ✓ Quiz code entered
+                  </p>
+                )}
               </div>
               
               <div>
@@ -334,83 +392,97 @@ const StudentQuizApp = ({ onBack }) => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600 p-4">
-      <div className="mb-4">
-        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center text-white">
-          <div className="text-center">
-            <div className="text-xl font-bold">{score.toLocaleString()}</div>
-            <div className="text-xs opacity-90">Score</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-sm font-semibold">Q{currentQuestion + 1}/{questions.length}</div>
-            <div className="text-xs opacity-90">Question</div>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-xl font-bold">{timeLeft}</div>
-            <div className="text-xs opacity-90">Time</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <div className="bg-white bg-opacity-30 rounded-full h-2">
-          <div 
-            className="bg-white h-2 rounded-full transition-all duration-1000"
-            style={{ width: `${(timeLeft / 20) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
-          <h2 className="text-xl font-bold text-gray-800 leading-relaxed">
-            {questions[currentQuestion].question}
-          </h2>
-        </div>
-      </div>
-
-      <div className="space-y-4 mb-6">
-        {questions[currentQuestion].options.map((option, index) => (
-          <button
-            key={index}
-            onClick={() => handleAnswerClick(index)}
-            disabled={showResult}
-            className={getAnswerClass(index)}
-          >
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-4 text-gray-800 font-bold text-sm">
-                {String.fromCharCode(65 + index)}
+  if (gameState === 'playing') {
+    return (
+      <ScreenshotProtection onScreenshotDetected={handleScreenshotDetected}>
+        <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600 p-4">
+          <div className="mb-4">
+            <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 flex justify-between items-center text-white">
+              <div className="text-center">
+                <div className="text-xl font-bold">{score.toLocaleString()}</div>
+                <div className="text-xs opacity-90">Score</div>
               </div>
-              <span className="text-left">{option}</span>
+              
+              <div className="text-center">
+                <div className="text-sm font-semibold">Q{currentQuestion + 1}/{questions.length}</div>
+                <div className="text-xs opacity-90">Question</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-xl font-bold">{timeLeft}</div>
+                <div className="text-xs opacity-90">Time</div>
+              </div>
             </div>
-          </button>
-        ))}
-      </div>
-
-      {showResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4">
-            {selectedAnswer === questions[currentQuestion].correct ? (
-              <>
-                <div className="text-6xl mb-4">🎉</div>
-                <h3 className="text-2xl font-bold text-green-600 mb-2">Correct!</h3>
-                <p className="text-gray-600">Great job! +{questions[currentQuestion].points + Math.floor((timeLeft / 20) * 500)} points</p>
-              </>
-            ) : (
-              <>
-                <div className="text-6xl mb-4">😔</div>
-                <h3 className="text-2xl font-bold text-red-600 mb-2">Wrong Answer</h3>
-                <p className="text-gray-600">The correct answer was: <span className="font-semibold">{questions[currentQuestion].options[questions[currentQuestion].correct]}</span></p>
-              </>
-            )}
           </div>
+
+          <div className="mb-6">
+            <div className="bg-white bg-opacity-30 rounded-full h-2">
+              <div 
+                className="bg-white h-2 rounded-full transition-all duration-1000"
+                style={{ width: `${(timeLeft / 20) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Replace text question with image */}
+          <div className="mb-6">
+            <div className="bg-white rounded-2xl shadow-xl p-6 text-center">
+              <TextToImage
+                text={questions[currentQuestion].question}
+                width={600}
+                height={120}
+                fontSize={28}
+                className="mx-auto"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            {questions[currentQuestion].options.map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleAnswerClick(index)}
+                disabled={showResult}
+                className={getAnswerClass(index)}
+              >
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-4 text-gray-800 font-bold text-sm">
+                    {String.fromCharCode(65 + index)}
+                  </div>
+                  <span className="text-left">{option}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {showResult && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4">
+                {selectedAnswer === questions[currentQuestion].correct ? (
+                  <>
+                    <div className="text-6xl mb-4">🎉</div>
+                    <h3 className="text-2xl font-bold text-green-600 mb-2">Correct!</h3>
+                    <p className="text-gray-600">Great job! +{questions[currentQuestion].points + Math.floor((timeLeft / 20) * 500)} points</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl mb-4">😔</div>
+                    <h3 className="text-2xl font-bold text-red-600 mb-2">Wrong Answer</h3>
+                    <div className="text-gray-600">
+                      <p className="mb-2">The correct answer was:</p>
+                      <p className="font-semibold">{questions[currentQuestion].options[questions[currentQuestion].correct]}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      </ScreenshotProtection>
+    );
+  }
+
+  return null;
 };
 
 export default StudentQuizApp;

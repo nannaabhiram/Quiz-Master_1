@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-// Quiz Context for real-time communication
 const QuizContext = createContext();
 
 export const useQuiz = () => {
@@ -14,6 +13,7 @@ export const useQuiz = () => {
 export const QuizProvider = ({ children }) => {
   const [quizState, setQuizState] = useState({
     isActive: false,
+    isStarted: false,
     currentQuestion: 0,
     questions: [],
     quizCode: 'ABC123',
@@ -26,21 +26,42 @@ export const QuizProvider = ({ children }) => {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'quizState') {
-        const newState = JSON.parse(e.newValue);
-        setQuizState(newState);
+        try {
+          const newState = JSON.parse(e.newValue);
+          setQuizState(newState);
+        } catch (error) {
+          console.error('Error parsing quiz state from localStorage:', error);
+        }
       }
     };
 
+    // Listen for custom events
+    const handleQuizStarted = (e) => {
+      setQuizState(e.detail);
+    };
+
+    const handleQuestionChanged = (e) => {
+      setQuizState(e.detail);
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('quizStarted', handleQuizStarted);
+    window.addEventListener('questionChanged', handleQuestionChanged);
     
     // Load initial state
     const savedState = localStorage.getItem('quizState');
     if (savedState) {
-      setQuizState(JSON.parse(savedState));
+      try {
+        setQuizState(JSON.parse(savedState));
+      } catch (error) {
+        console.error('Error loading quiz state from localStorage:', error);
+      }
     }
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('quizStarted', handleQuizStarted);
+      window.removeEventListener('questionChanged', handleQuestionChanged);
     };
   }, []);
 
@@ -53,11 +74,20 @@ export const QuizProvider = ({ children }) => {
     const newState = {
       ...quizState,
       isActive: true,
+      isStarted: false, // Quiz is set up but not started yet
       questions,
       currentQuestion: 0,
       showResults: false,
       quizEnded: false,
-      students: []
+      students: [...quizState.students]
+    };
+    setQuizState(newState);
+  };
+
+  const actuallyStartQuiz = () => {
+    const newState = {
+      ...quizState,
+      isStarted: true // Now the quiz actually starts
     };
     setQuizState(newState);
     
@@ -74,6 +104,11 @@ export const QuizProvider = ({ children }) => {
         currentQuestion: quizState.currentQuestion + 1
       };
       setQuizState(newState);
+      
+      // Broadcast to all tabs
+      window.dispatchEvent(new CustomEvent('questionChanged', { 
+        detail: newState 
+      }));
     } else {
       endQuiz();
     }
@@ -83,51 +118,22 @@ export const QuizProvider = ({ children }) => {
     const newState = {
       ...quizState,
       isActive: false,
+      isStarted: false,
       showResults: true,
       quizEnded: true
     };
     setQuizState(newState);
   };
 
-  const joinQuiz = (playerName, code) => {
-    // Hardcode for abc123
-    if (
-      code.toLowerCase() === 'abc123' &&
-      quizState.questions.length === 0
-    ) {
-      const hardcodedQuestions = [
-        {
-          question: '2 + 2 = ?',
-          options: ['3', '4', '5', '22'],
-          correct: 1,
-          points: 1000,
-        },
-      ];
-      const newState = {
-        ...quizState,
-        questions: hardcodedQuestions,
-        quizCode: 'abc123',
-        isActive: true,
-        showResults: false,
-        quizEnded: false,
-        currentQuestion: 0,
-        students: [
-          ...quizState.students,
-          {
-            id: Date.now(),
-            name: playerName,
-            score: 0,
-            answered: 0,
-          },
-        ],
-      };
-      setQuizState(newState);
-      return true;
-    }
+  const joinQuiz = (playerName, code, studentId) => {
+    if (code.toLowerCase() === quizState.quizCode.toLowerCase()) {
+      const existingStudent = quizState.students.find(s => s.id === studentId);
+      if (existingStudent) {
+        return true;
+      }
 
-    if (code === quizState.quizCode) {
       const newStudent = {
-        id: Date.now(),
+        id: studentId || Date.now(),
         name: playerName,
         score: 0,
         answered: 0,
@@ -144,6 +150,8 @@ export const QuizProvider = ({ children }) => {
   };
 
   const submitAnswer = (studentId, answerIndex, timeLeft) => {
+    if (!quizState.questions[quizState.currentQuestion]) return;
+    
     const currentQ = quizState.questions[quizState.currentQuestion];
     const isCorrect = answerIndex === currentQ.correct;
     const timeBonus = Math.floor((timeLeft / 20) * 500);
@@ -167,6 +175,7 @@ export const QuizProvider = ({ children }) => {
   const resetQuiz = () => {
     const newState = {
       isActive: false,
+      isStarted: false,
       currentQuestion: 0,
       questions: [],
       quizCode: 'ABC123',
@@ -181,8 +190,9 @@ export const QuizProvider = ({ children }) => {
     <QuizContext.Provider 
       value={{
         quizState,
-        setQuizState, // <-- add this line
+        setQuizState,
         startQuiz,
+        actuallyStartQuiz,
         nextQuestion,
         endQuiz,
         joinQuiz,

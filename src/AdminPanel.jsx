@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Play, Square, Users, Trophy, Clock, Edit3 } from 'lucide-react';
 import { useQuiz } from './QuizContext';
+import TextToImage from './TextToImage';
+import QRCode from 'qrcode';
 
 // Admin Panel Component
 const AdminPanel = ({ onBack }) => {
   const { 
     quizState, 
     setQuizState,
-    startQuiz: startQuizContext, 
+    startQuiz,
+    actuallyStartQuiz, // Add this function from context
     nextQuestion: nextQuestionContext, 
     endQuiz: endQuizContext, 
     resetQuiz: resetQuizContext,
@@ -25,6 +28,28 @@ const AdminPanel = ({ onBack }) => {
 
   // Use quiz state from context
   const { isActive: quizActive, currentQuestion, showResults, students, quizCode } = quizState;
+
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  useEffect(() => {
+    if (quizActive) {
+      // Use your computer's actual IP address
+      const computerIP = '192.168.0.9'; // Your actual IP from ifconfig
+      const joinUrl = `http://${computerIP}:3000?join=${quizCode}`;
+      QRCode.toDataURL(joinUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(url => {
+        setQrCodeUrl(url);
+      }).catch(err => {
+        console.error('QR Code generation failed:', err);
+      });
+    }
+  }, [quizActive, quizCode]);
 
   const addQuestion = () => {
     if (newQuestion.question.trim() && newQuestion.options.every(opt => opt.trim())) {
@@ -58,22 +83,28 @@ const AdminPanel = ({ onBack }) => {
 
   const handleStartQuiz = () => {
     if (questions.length > 0) {
-      startQuizContext(questions);
-      setQuizState(prev => ({ ...prev, showResults: false, students: [] }));
+      startQuiz(questions); // This sets up the quiz for students to join
+    }
+  };
+
+  const handleNextQuestion = () => {
+    // If quiz is active but not started, start it
+    if (quizActive && !quizState.isStarted) {
+      console.log('Actually starting the quiz now');
+      actuallyStartQuiz(); // Use the context function instead of setQuizState
+    } 
+    // If quiz is started and not on last question, go to next
+    else if (quizState.isStarted && currentQuestion < questions.length - 1) {
+      nextQuestionContext();
+    } 
+    // If on last question, end quiz
+    else {
+      handleStopQuiz();
     }
   };
 
   const handleStopQuiz = () => {
     endQuizContext();
-    setQuizState(prev => ({ ...prev, showResults: true }));
-  };
-
-  const handleNextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      nextQuestionContext();
-    } else {
-      handleStopQuiz();
-    }
   };
 
   const updateQuestionField = (field, value) => {
@@ -172,7 +203,8 @@ const AdminPanel = ({ onBack }) => {
                   onClick={handleNextQuestion}
                   className="bg-green-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-600 transition-all duration-300"
                 >
-                  {currentQuestion < questionsFromContext.length - 1 ? 'Next Question' : 'End Quiz'}
+                  {!quizState.isStarted ? 'Start Quiz' : 
+                   currentQuestion < questionsFromContext.length - 1 ? 'Next Question' : 'End Quiz'}
                 </button>
                 <button
                   onClick={handleStopQuiz}
@@ -191,13 +223,54 @@ const AdminPanel = ({ onBack }) => {
             </div>
           </div>
 
+          {/* Updated Quiz Code Display Section with QR Code */}
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl shadow-xl p-6 mb-6 text-center">
+            <h3 className="text-2xl font-bold text-white mb-4">Students Join Quiz</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* QR Code Section */}
+              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4">
+                <h4 className="text-lg font-bold text-white mb-3">Scan QR Code</h4>
+                {qrCodeUrl && (
+                  <div className="bg-white p-4 rounded-lg inline-block">
+                    <img src={qrCodeUrl} alt="Quiz QR Code" className="w-32 h-32 mx-auto" />
+                  </div>
+                )}
+                <p className="text-white text-sm mt-2">Scan with mobile device</p>
+              </div>
+
+              {/* Manual Code Section */}
+              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-4">
+                <h4 className="text-lg font-bold text-white mb-3">Manual Entry</h4>
+                <div className="text-4xl font-bold text-white tracking-wider mb-2">{quizCode}</div>
+                <p className="text-white text-sm">Enter this code manually</p>
+              </div>
+            </div>
+
+            <div className="mt-4 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-3">
+              <p className="text-white text-sm">
+                📱 Students visit: <span className="font-bold">192.168.0.9:3000</span>
+              </p>
+              <p className="text-white text-xs mt-1 opacity-80">
+                Then scan QR code or enter code: <span className="font-bold">{quizCode}</span>
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Current Question</h3>
               <div className="bg-blue-50 rounded-xl p-6">
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                  {questionsFromContext[currentQuestion]?.question}
-                </h4>
+                {/* Show question as image */}
+                <div className="mb-4">
+                  <TextToImage
+                    text={questionsFromContext[currentQuestion]?.question}
+                    width={500}
+                    height={100}
+                    fontSize={20}
+                    className="mx-auto"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   {questionsFromContext[currentQuestion]?.options.map((option, index) => (
                     <div
@@ -407,8 +480,7 @@ const AdminPanel = ({ onBack }) => {
         </div>
       </div>
     </div>
-    );
-}
-
+  );
+};
 
 export default AdminPanel;
