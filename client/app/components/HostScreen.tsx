@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Play, Square, Trophy, Clock, Tv, ChevronRight } from 'lucide-react';
 import { getApiBase } from '../utils/api-config';
+import QRCode from 'qrcode';
 
 // Dynamic API base that auto-detects network IP
 let API_BASE = '';
@@ -16,6 +17,7 @@ const HostScreen: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(20);
   const [showAnswers, setShowAnswers] = useState(false);
   const [isQuestionActive, setIsQuestionActive] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // Initialize API base
   useEffect(() => {
@@ -24,6 +26,36 @@ const HostScreen: React.FC = () => {
     };
     initApi();
   }, []);
+
+  // Generate QR code for student join URL
+  useEffect(() => {
+    const generateQRCode = async () => {
+      if (quizCode && typeof window !== 'undefined') {
+        try {
+          // Create student join URL with quiz code
+          const studentJoinUrl = `${window.location.origin}/student?code=${quizCode}`;
+          
+          // Generate QR code
+          const qrDataUrl = await QRCode.toDataURL(studentJoinUrl, {
+            width: 200,
+            margin: 2,
+            color: {
+              dark: '#1a202c',
+              light: '#ffffff'
+            },
+            errorCorrectionLevel: 'M'
+          });
+          
+          setQrCodeUrl(qrDataUrl);
+          console.log('QR Code generated for:', studentJoinUrl);
+        } catch (error) {
+          console.error('Failed to generate QR code:', error);
+        }
+      }
+    };
+    
+    generateQRCode();
+  }, [quizCode]);
 
   // Get quiz ID from URL params or localStorage
   useEffect(() => {
@@ -153,7 +185,35 @@ const HostScreen: React.FC = () => {
             <h1 className="text-6xl font-bold text-white mb-4">Quiz Master</h1>
             <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 inline-block">
               <div className="text-4xl font-bold text-white mb-2">Game PIN: {quizCode}</div>
-              <div className="text-white/90">Join at: 192.168.1.2:5173/student</div>
+              <div className="text-white/90">Join at: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student</div>
+            </div>
+          </div>
+
+          {/* QR Code Section for Easy Mobile Access */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 text-center">
+              <h2 className="text-2xl font-bold text-white mb-4">📱 Scan to Join</h2>
+              {qrCodeUrl ? (
+                <div className="bg-white p-6 rounded-2xl inline-block">
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="Scan QR Code to Join Quiz" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+              ) : (
+                <div className="bg-white/20 p-6 rounded-2xl">
+                  <div className="w-48 h-48 flex items-center justify-center text-white/60">
+                    Generating QR Code...
+                  </div>
+                </div>
+              )}
+              <p className="text-white/90 text-lg mt-4">
+                Point your phone camera at this code
+              </p>
+              <p className="text-white/70 text-sm">
+                Or manually go to: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student
+              </p>
             </div>
           </div>
 
@@ -187,7 +247,7 @@ const HostScreen: React.FC = () => {
               <div className="text-center text-white/80 py-12">
                 <Users size={64} className="mx-auto mb-4 opacity-50" />
                 <div className="text-xl">Waiting for players to join...</div>
-                <div className="text-sm mt-2">Players can join using their phones at: 192.168.1.2:5173/student</div>
+                <div className="text-sm mt-2">Students can scan the QR code above or visit: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student</div>
               </div>
             )}
           </div>

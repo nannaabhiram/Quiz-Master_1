@@ -35,6 +35,25 @@ const StudentQuizApp: React.FC = () => {
     initApi();
   }, []);
 
+  // Auto-fill quiz code from URL params (QR code scan)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const codeFromUrl = urlParams.get('code');
+      if (codeFromUrl) {
+        setQuizCode(codeFromUrl.toUpperCase());
+        console.log('Quiz code auto-filled from QR scan:', codeFromUrl);
+        setToast('Quiz code filled from QR scan! Enter your name to join.');
+        
+        // Clear the URL parameter for cleaner URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Auto-clear toast after 3 seconds
+        setTimeout(() => setToast(''), 3000);
+      }
+    }
+  }, []);
+
   // Poll admin-controlled current question index when connected
   useEffect(() => {
     if (!quizId) return;
@@ -458,6 +477,18 @@ const StudentQuizApp: React.FC = () => {
     if (selectedAnswer === index && index !== questions[currentQuestion].correct) return `${baseClass} bg-red-500 text-white shadow-lg`;
     return `${baseClass} bg-gray-300 text-gray-600`;
   };
+
+  // Auto-fill quiz code from URL params (QR code scan)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    if (codeFromUrl) {
+      setQuizCode(codeFromUrl.toUpperCase());
+      console.log('Quiz code auto-filled from QR scan:', codeFromUrl);
+      // Clear the URL parameter for cleaner URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   if (gameState === 'waiting') {
     return (
