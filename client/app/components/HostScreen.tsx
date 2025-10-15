@@ -110,6 +110,55 @@ const HostScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [quizId]);
 
+  // Poll for current question index and sync questions
+  useEffect(() => {
+    if (!quizId) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        // Get current quiz state (includes currentIndex)
+        const stateRes = await fetch(`${API_BASE}/api/student/quizzes/${quizId}/state`);
+        if (stateRes.ok) {
+          const state = await stateRes.json();
+          console.log('Quiz state:', state);
+          
+          // If quiz has started and we have a valid current index
+          if (state.started && typeof state.currentIndex === 'number' && state.currentIndex >= 0) {
+            // Update current question index if it changed
+            if (state.currentIndex !== currentQuestion) {
+              console.log(`Admin advanced to question ${state.currentIndex}`);
+              setCurrentQuestion(state.currentIndex);
+              setGameState('question');
+              setTimeLeft(20);
+              setShowAnswers(false);
+              setIsQuestionActive(true);
+            }
+          }
+        }
+
+        // Also refresh questions if empty
+        if (questions.length === 0 && quizCode) {
+          const qRes = await fetch(`${API_BASE}/api/student/quiz-by-code?code=${quizCode}`);
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            if (qData.questions && qData.questions.length > 0) {
+              console.log('Loaded questions:', qData.questions);
+              setQuestions(qData.questions.map((q: any) => ({
+                question: q.questionText || q.question,
+                options: q.options || [],
+                correct: q.options ? Math.max(0, q.options.indexOf(q.correctAnswer)) : 0,
+              })));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error polling quiz state:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [quizId, quizCode, currentQuestion, questions.length]);
+
   // Timer countdown
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -283,27 +332,47 @@ const HostScreen: React.FC = () => {
 
           {/* Question */}
           <div className="bg-white rounded-3xl p-8 mb-8 text-center">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              {question?.question || 'Sample Question: What is 2 + 2?'}
-            </h2>
+            {question?.question ? (
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                {question.question}
+              </h2>
+            ) : (
+              <div className="text-2xl text-gray-500 py-8">
+                <Clock className="mx-auto mb-4" size={48} />
+                <p>Waiting for question from admin...</p>
+              </div>
+            )}
           </div>
 
           {/* Answer Options */}
-          <div className="grid grid-cols-2 gap-6">
-            {(question?.options || ['2', '3', '4', '5']).map((option: string, index: number) => (
-              <div
-                key={index}
-                className={`${colors[index]} rounded-2xl p-8 text-center transform transition-all duration-300 ${
-                  showAnswers ? (index === question?.correct ? 'scale-105 ring-4 ring-white' : 'opacity-60') : ''
-                }`}
-              >
-                <div className="text-white">
-                  <div className="text-6xl mb-4">{shapes[index]}</div>
-                  <div className="text-2xl font-bold">{option}</div>
+          {question?.options ? (
+            <div className="grid grid-cols-2 gap-6">
+              {question.options.map((option: string, index: number) => (
+                <div
+                  key={index}
+                  className={`${colors[index]} rounded-2xl p-8 text-center transform transition-all duration-300 ${
+                    showAnswers ? (index === question?.correct ? 'scale-105 ring-4 ring-white' : 'opacity-60') : ''
+                  }`}
+                >
+                  <div className="text-white">
+                    <div className="text-6xl mb-4">{shapes[index]}</div>
+                    <div className="text-2xl font-bold">{option}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-6">
+              {[0, 1, 2, 3].map((index) => (
+                <div key={index} className={`${colors[index]} rounded-2xl p-8 text-center opacity-40`}>
+                  <div className="text-white">
+                    <div className="text-6xl mb-4">{shapes[index]}</div>
+                    <div className="text-xl text-white/60">---</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Controls */}
           <div className="flex justify-center mt-8 space-x-4">

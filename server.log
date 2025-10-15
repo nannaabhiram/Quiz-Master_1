@@ -1,0 +1,10 @@
+
+> quiz-master@1.0.0 dev
+> node src/server.js
+
+[dotenv@17.2.2] injecting env (1) from src/.env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[env] Loaded /Users/msrihanrao/Desktop/pi/src/.env; has MONGO_URI: true
+Server is running on http://localhost:3000
+Network access: http://192.168.0.9:3000
+[mongoose] connection state=connected (1)
+Connected to MongoDB Atlas!

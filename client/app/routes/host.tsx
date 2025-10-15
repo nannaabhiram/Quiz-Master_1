@@ -3,7 +3,7 @@ import HostScreen from "../components/HostScreen";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Quiz Host Screen - Kahoot Style" },
+    { title: "Quiz Host Screen" },
     { name: "description", content: "Host screen for projector display" },
   ];
 }
