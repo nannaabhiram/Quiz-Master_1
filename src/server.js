@@ -242,21 +242,49 @@ app.post('/api/student/join', async (req, res) => {
 // Student: answer submission (increments score if correct with speed bonus)
 app.post('/api/student/answer', async (req, res) => {
   try {
-    const { quizId, name, correct, points, timeLeft } = req.body || {};
+    const { quizId, name, answer, timeLeft, correct: legacyCorrect, points: legacyPoints } = req.body || {};
     if (!quizId || !name) return res.status(400).json({ error: 'quizId and name are required' });
-    const bucket = getQuizParticipants(String(quizId));
+    const pid = String(quizId);
+    const bucket = getQuizParticipants(pid);
     const player = bucket.get(String(name));
     if (!player) return res.status(404).json({ error: 'Player not joined' });
-    if (correct) {
-      // Calculate speed bonus (faster answers get more points)
-      const speedBonus = Math.floor(((timeLeft || 0) / 20) * 500);
-      const totalPoints = Number(points || 1000) + speedBonus;
+
+    // Determine correctness server-side based on current question, falling back to legacy payload if provided
+    let isCorrect = false;
+    let basePoints = 1000;
+    try {
+      const state = quizState.get(pid);
+      if (state && typeof state.currentIndex === 'number' && state.currentIndex >= 0) {
+        const qdocs = await Question.find({ quizId: pid }).sort({ _id: 1 }).skip(state.currentIndex).limit(1).select('options correctAnswer points');
+        const q = qdocs[0];
+        if (q) {
+          basePoints = Number(q.points || 1000);
+          if (typeof answer === 'number' && Array.isArray(q.options)) {
+            const chosen = q.options[answer];
+            isCorrect = chosen === q.correctAnswer;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore and fall back to legacy payload
+    }
+    if (!isCorrect && typeof legacyCorrect === 'boolean') {
+      isCorrect = legacyCorrect;
+    }
+    if (legacyPoints && !Number.isNaN(Number(legacyPoints))) {
+      basePoints = Number(legacyPoints);
+    }
+
+    if (isCorrect) {
+      const tl = Number(timeLeft || 0);
+      const bounded = Math.max(0, Math.min(20, tl));
+      const speedBonus = Math.floor((bounded / 20) * 500);
+      const totalPoints = basePoints + speedBonus;
       player.score += totalPoints;
       bucket.set(String(name), player);
-      res.json({ ok: true, score: player.score, speedBonus, totalPoints });
-    } else {
-      res.json({ ok: true, score: player.score, speedBonus: 0, totalPoints: 0 });
+      return res.json({ ok: true, score: player.score, correct: true, speedBonus, totalPoints });
     }
+    return res.json({ ok: true, score: player.score, correct: false, speedBonus: 0, totalPoints: 0 });
   } catch (err) {
     console.error('Answer error:', err);
     res.status(500).json({ error: 'Failed to submit answer' });
@@ -286,6 +314,35 @@ app.put('/api/admin/quizzes/:id/next', async (req, res) => {
   } catch (err) {
     console.error('Advance next error:', err);
     res.status(500).json({ error: 'Failed to advance question' });
+  }
+});
+
+// Student: get current question (based on server quiz state)
+app.get('/api/student/quizzes/:id/current-question', async (req, res) => {
+  try {
+    const pid = String(req.params.id);
+    const state = quizState.get(pid);
+    if (!state || typeof state.currentIndex !== 'number' || state.currentIndex < 0) {
+      return res.status(404).json({ error: 'Quiz not started' });
+    }
+    const qdocs = await Question.find({ quizId: pid })
+      .sort({ _id: 1 })
+      .skip(state.currentIndex)
+      .limit(1)
+      .select('questionText options points');
+    const q = qdocs[0];
+    if (!q) {
+      return res.status(404).json({ error: 'No more questions' });
+    }
+    return res.json({
+      questionText: q.questionText,
+      options: q.options || [],
+      points: q.points || 1000,
+      index: state.currentIndex,
+    });
+  } catch (err) {
+    console.error('current-question error:', err);
+    res.status(500).json({ error: 'Failed to fetch current question' });
   }
 });
 

@@ -5,12 +5,15 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/server.js",
+    "server": "node src/server.js",
+    "client": "npm run dev --prefix client",
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run server\" \"npm run client\"",
+    "seed": "node src/migrations/seedSampleQuiz.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "quiz",
-    "education", 
+    "education",
     "interactive",
     "backend"
   ],
@@ -21,5 +24,10 @@
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1"
   }
 }

@@ -73,7 +73,15 @@ const HostScreen: React.FC = () => {
           if (res.ok) {
             const data = await res.json();
             if (data.questions) {
-              setQuestions(data.questions);
+              // Normalize questions so rendering always has {question, options, correct}
+              const normalized = data.questions.map((q: any) => ({
+                question: q.questionText || q.question,
+                options: Array.isArray(q.options) ? q.options : [],
+                correct: Array.isArray(q.options)
+                  ? Math.max(0, q.options.indexOf(q.correctAnswer))
+                  : (typeof q.correct === 'number' ? q.correct : 0),
+              }));
+              setQuestions(normalized);
             }
           }
         } catch (error) {
@@ -145,8 +153,10 @@ const HostScreen: React.FC = () => {
               console.log('Loaded questions:', qData.questions);
               setQuestions(qData.questions.map((q: any) => ({
                 question: q.questionText || q.question,
-                options: q.options || [],
-                correct: q.options ? Math.max(0, q.options.indexOf(q.correctAnswer)) : 0,
+                options: Array.isArray(q.options) ? q.options : [],
+                correct: Array.isArray(q.options)
+                  ? Math.max(0, q.options.indexOf(q.correctAnswer))
+                  : (typeof q.correct === 'number' ? q.correct : 0),
               })));
             }
           }
@@ -192,15 +202,16 @@ const HostScreen: React.FC = () => {
     setShowAnswers(true);
   };
 
-  const nextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+  const nextQuestion = async () => {
+    // Advance question on server; let polling update currentQuestion
+    try {
+      await fetch(`${API_BASE}/api/admin/quizzes/${quizId}/next`, { method: 'PUT' });
       setGameState('question');
       setTimeLeft(20);
       setShowAnswers(false);
       setIsQuestionActive(true);
-    } else {
-      setGameState('finished');
+    } catch (error) {
+      console.error('Error advancing question:', error);
     }
   };
 
@@ -296,7 +307,7 @@ const HostScreen: React.FC = () => {
               <div className="text-center text-white/80 py-12">
                 <Users size={64} className="mx-auto mb-4 opacity-50" />
                 <div className="text-xl">Waiting for players to join...</div>
-                <div className="text-sm mt-2">Students can scan the QR code above or visit: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student</div>
+                  <div className="text-sm text-gray-200 mt-2">Students can scan the QR code above or visit: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student</div>
               </div>
             )}
           </div>
@@ -396,7 +407,13 @@ const HostScreen: React.FC = () => {
                 </button>
                 
                 <button 
-                  onClick={nextQuestion}
+                  onClick={() => {
+                    if (currentQuestion < questions.length - 1) {
+                      nextQuestion();
+                    } else {
+                      setGameState('leaderboard');
+                    }
+                  }}
                   className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl text-xl flex items-center"
                 >
                   {currentQuestion < questions.length - 1 ? (
@@ -427,23 +444,28 @@ const HostScreen: React.FC = () => {
 
           {/* Top 3 Podium */}
           <div className="flex justify-center items-end mb-8 space-x-4">
-            {sortedPlayers.slice(0, 3).map((player, index) => {
-              const positions = [1, 0, 2]; // Second, First, Third
-              const actualIndex = positions[index];
-              const heights = ['h-40', 'h-48', 'h-32'];
-              
-              return (
-                <div key={player.name} className="text-center">
-                  <div className={`${podiumColors[actualIndex]} ${heights[actualIndex]} w-32 rounded-t-2xl flex flex-col justify-end p-4`}>
-                    <div className="text-white font-bold text-lg">{player.name}</div>
-                    <div className="text-white text-2xl font-bold">{player.score || 0}</div>
+            {(() => {
+              const top3 = sortedPlayers.slice(0, 3);
+              const order = [1, 0, 2]; // visual order: second, first, third
+              const heightByRank: Record<number, string> = { 1: 'h-48', 2: 'h-40', 3: 'h-32' };
+              const colorByRank: Record<number, string> = { 1: 'bg-yellow-500', 2: 'bg-gray-400', 3: 'bg-orange-500' };
+              return order.map((i) => {
+                const player = top3[i];
+                if (!player) return null;
+                const rank = i + 1; // rank is based on sorted order index
+                return (
+                  <div key={player.name} className="text-center">
+                    <div className={`${colorByRank[rank]} ${heightByRank[rank]} w-32 rounded-t-2xl flex flex-col justify-end p-4`}>
+                      <div className="text-white font-bold text-lg">{player.name}</div>
+                      <div className="text-white text-2xl font-bold">{player.score || 0}</div>
+                    </div>
+                    <div className="bg-white/20 text-white font-bold py-2 px-4 rounded-b-2xl">
+                      #{rank}
+                    </div>
                   </div>
-                  <div className="bg-white/20 text-white font-bold py-2 px-4 rounded-b-2xl">
-                    #{actualIndex + 1}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
 
           {/* Full Leaderboard */}
@@ -464,7 +486,13 @@ const HostScreen: React.FC = () => {
           {/* Continue Button */}
           <div className="text-center">
             <button 
-              onClick={() => setGameState('question')}
+              onClick={() => {
+                if (currentQuestion < questions.length - 1) {
+                  nextQuestion();
+                } else {
+                  setGameState('finished');
+                }
+              }}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl text-xl flex items-center mx-auto"
             >
               {currentQuestion < questions.length - 1 ? (

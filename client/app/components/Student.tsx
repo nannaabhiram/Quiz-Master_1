@@ -253,44 +253,29 @@ const Student: React.FC = () => {
 
   if (screen === 'question') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-6">
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 inline-block mb-4">
-              <div className="flex items-center text-white">
-                <Clock className="mr-2" size={24} />
-                <span className="text-2xl font-bold">{timeLeft}s</span>
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">{currentQuestion?.questionText}</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {currentQuestion?.options.map((option: string, index: number) => (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 text-center max-w-md mx-auto">
+          <Play className="mx-auto mb-4 text-purple-600 animate-bounce" size={64} />
+          <h2 className="text-3xl font-bold text-purple-700 mb-4">Quiz in Progress</h2>
+          <p className="text-xl text-gray-700 mb-4">Please watch the host screen for the question and options.<br/>Tap your answer below.</p>
+          <div className="grid grid-cols-2 gap-6 mt-8">
+            {[0,1,2,3].map((index) => (
               <button
                 key={index}
                 onClick={() => submitAnswer(index)}
                 disabled={isAnswered}
-                className={`${colors[index]} rounded-2xl p-6 text-center transform transition-all ${
-                  isAnswered ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'
-                } ${selectedAnswer === index ? 'ring-4 ring-white' : ''}`}
+                className={`${colors[index]} rounded-2xl p-8 text-center transform transition-all duration-300 ${isAnswered ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'} ${selectedAnswer === index ? 'ring-4 ring-white' : ''}`}
               >
                 <div className="text-white">
-                  <div className="text-4xl mb-2">{shapes[index]}</div>
-                  <div className="text-xl font-bold">{option}</div>
+                  <div className="text-6xl mb-4">{shapes[index]}</div>
+                  <div className="text-2xl font-bold">{String.fromCharCode(65+index)}</div>
                 </div>
               </button>
             ))}
           </div>
-
-          {showResult && (
-            <div className={`mt-6 p-6 rounded-2xl text-center ${
-              isCorrect ? 'bg-green-500' : 'bg-red-500'
-            }`}>
-              <div className="text-white text-2xl font-bold">
-                {isCorrect ? '🎉 Correct!' : '❌ Wrong'}
-              </div>
-              <div className="text-white mt-2">Score: {score}</div>
+          {isAnswered && (
+            <div className="mt-6 p-4 rounded-xl bg-purple-100 text-purple-700 font-bold text-xl">
+              Answer submitted!
             </div>
           )}
         </div>
