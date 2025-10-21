@@ -1,5 +1,6 @@
 import type { Route } from "./+types/host";
 import HostScreen from "../components/HostScreen";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,5 +10,9 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function HostRoute() {
-  return <HostScreen />;
+  return (
+    <ProtectedRoute>
+      <HostScreen />
+    </ProtectedRoute>
+  );
 }

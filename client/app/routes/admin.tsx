@@ -1,5 +1,6 @@
 import type { Route } from "./+types/admin";
 import AdminPanel from "../components/AdminPanel";
+import ProtectedRoute from "../components/ProtectedRoute";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,5 +10,9 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function AdminRoute() {
-  return <AdminPanel />;
+  return (
+    <ProtectedRoute>
+      <AdminPanel />
+    </ProtectedRoute>
+  );
 }

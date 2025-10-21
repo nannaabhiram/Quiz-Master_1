@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
-import { Users, Settings, Gamepad2, Trophy } from "lucide-react";
+import { Users, Settings, Gamepad2, Trophy, LogOut, LogIn } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,9 +11,46 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
+        {/* Auth Status Bar */}
+        <div className="flex justify-end mb-4">
+          {user ? (
+            <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 flex items-center gap-4">
+              <div className="text-white">
+                <span className="text-sm opacity-80">Signed in as</span>
+                <p className="font-semibold">{user.displayName || user.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors"
+                title="Sign out"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-full px-6 py-3 flex items-center gap-2 transition-colors"
+            >
+              <LogIn size={20} />
+              <span className="font-semibold">Sign In</span>
+            </Link>
+          )}
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-6">
