@@ -40,7 +40,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <ScrollRestoration />
-        {/* Inject API base URL for client-side fetches; resolved at SSR runtime */}
         {inlineScript ? (
           <script
             dangerouslySetInnerHTML={{ __html: inlineScript }}
