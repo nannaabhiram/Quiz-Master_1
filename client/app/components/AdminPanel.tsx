@@ -16,7 +16,6 @@ type StudentItem = {
   answered: number;
 };
 
-// Dynamic API base that auto-detects network IP
 let API_BASE = '';
 // Turn off simulated/demo students; real-time integration can populate from server later
 const DEMO_MODE = false;
