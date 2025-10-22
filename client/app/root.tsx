@@ -43,7 +43,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Inject API base URL for client-side fetches; resolved at SSR runtime */}
         {inlineScript ? (
           <script
-            // Note: this runs on the server during SSR and embeds the value into HTML
             dangerouslySetInnerHTML={{ __html: inlineScript }}
           />
         ) : null}
