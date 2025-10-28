@@ -21,6 +21,9 @@ console.log(`[env] Loaded ${usedEnv || 'no .env file found'}; has MONGO_URI: ${!
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Render HTTPS
+app.set('trust proxy', 1);
+
 // Function to get the local network IP address
 function getNetworkIP() {
   const interfaces = os.networkInterfaces();
@@ -415,4 +418,5 @@ app.listen(PORT, '0.0.0.0', () => {
   const networkIP = getNetworkIP();
   console.log(`Server is running on http://localhost:${PORT}`);
   console.log(`Network access: http://${networkIP}:${PORT}`);
+  console.log(`Production URL: https://peekaboo-lp6y.onrender.com`);
 });
