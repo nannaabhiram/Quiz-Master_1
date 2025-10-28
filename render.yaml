@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: quize-master-api
+    name: peekaboo-api
     env: node
     rootDir: .
     plan: free
@@ -29,5 +29,5 @@ services:
       # This dynamically points the frontend to the backend's public URL
       - key: API_BASE
         fromService:
-          name: quize-master-api
+          name: peekaboo-api
           type: url
