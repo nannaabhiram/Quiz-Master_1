@@ -1,8 +1,8 @@
-# 🌐 Universal WiFi Support for Quiz Master
+# 🌐 Universal WiFi Support for peekaboo
 
 ## ✅ **DONE: Dynamic IP Detection Implemented!**
 
-Your Quiz Master application now **automatically detects and adapts** to any WiFi network without manual IP configuration!
+Your peekaboo application now **automatically detects and adapts** to any WiFi network without manual IP configuration!
 
 ## 🚀 **How It Works:**
 
@@ -82,4 +82,4 @@ Students use: `http://[AUTO-DETECTED-IP]:5173/student`
 - `client/app/components/AdminPanel.tsx` - Dynamic API configuration
 - `client/app/components/HostScreen.tsx` - Dynamic API configuration
 
-Your Quiz Master is now **truly universal** - it will work seamlessly on any WiFi network! 🎉
+Your peekaboo is now **truly universal** - it will work seamlessly on any WiFi network! 🎉

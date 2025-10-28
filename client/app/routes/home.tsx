@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Quiz Master - Interactive Quiz Platform" },
+    { title: "peekaboo - Interactive Quiz Platform" },
     { name: "description", content: "Create and join interactive quizzes in real-time!" },
   ];
 }
@@ -57,7 +57,7 @@ export default function Home() {
             <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 mr-4">
               <Trophy className="text-white" size={48} />
             </div>
-            <h1 className="text-5xl font-bold text-white">Quiz Master</h1>
+            <h1 className="text-5xl font-bold text-white">peekaboo</h1>
           </div>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Interactive quiz platform for real-time learning and engagement. 

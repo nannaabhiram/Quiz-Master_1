@@ -28,7 +28,7 @@ const QuizApp = () => {
             <div className="inline-flex items-center justify-center w-24 h-24 bg-white bg-opacity-20 backdrop-blur-sm rounded-full mb-4">
               <Trophy className="text-white" size={48} />
             </div>
-            <h1 className="text-5xl font-bold text-white mb-4">Quiz Master</h1>
+            <h1 className="text-5xl font-bold text-white mb-4">peekaboo</h1>
             <p className="text-xl text-white opacity-90">Interactive Quiz Platform</p>
           </div>
         </div>

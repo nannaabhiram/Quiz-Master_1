@@ -151,4 +151,4 @@ export default function AdminRoute() {
 4. Test login with email/password
 5. Test Google Sign-In (requires Firebase Console setup)
 
-Enjoy your authenticated Quiz Master application! 🎉
+Enjoy your authenticated  application! 🎉

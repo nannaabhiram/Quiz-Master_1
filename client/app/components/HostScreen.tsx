@@ -242,7 +242,7 @@ const HostScreen: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-6xl font-bold text-white mb-4">Quiz Master</h1>
+            <h1 className="text-6xl font-bold text-white mb-4">peekaboo</h1>
             <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 inline-block">
               <div className="text-4xl font-bold text-white mb-2">Game PIN: {quizCode}</div>
               <div className="text-white/90">Join at: {typeof window !== 'undefined' ? window.location.origin.replace('http://', '') : ''}/student</div>
