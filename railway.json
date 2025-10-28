@@ -1,0 +1,13 @@
+{
+  "name": "peekaboo-backend",
+  "version": "1.0.0",
+  "description": "Quiz Master Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
