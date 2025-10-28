@@ -1,33 +1,43 @@
 services:
-  - type: web
-    name: peekaboo-api
-    env: node
-    rootDir: .
-    plan: free
-    autoDeploy: true
-    buildCommand: npm install
-    startCommand: npm run start
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      # IMPORTANT: Provide this securely in Render Dashboard after creating the service,
-      # or uncomment `value` below to inline it (not recommended for public repos).
-      - key: MONGO_URI
-        sync: false
+  services:
+    - type: web
+      name: peekaboo-api
+      env: node
+      rootDir: .
+      plan: free
+      autoDeploy: true
+      buildCommand: npm install
+      startCommand: npm run start
+      envVars:
+        - key: NODE_VERSION
+          value: 20
+        # IMPORTANT: Provide this securely in Render Dashboard after creating the service.
+        # Do NOT commit real credentials into this file. Set MONGO_URI using the Render UI.
+        - key: MONGO_URI
+          sync: false
 
-  - type: web
-    name: quize-master-frontend
-    env: node
-    rootDir: client
-    plan: free
-    autoDeploy: true
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      # This dynamically points the frontend to the backend's public URL
-      - key: API_BASE
-        fromService:
-          name: peekaboo-api
-          type: url
+    # Frontend as a static site (SPA) — build-time VITE_* vars are required so the
+    # produced JS bundle contains Firebase config and the API base URL.
+    - type: static
+      name: peekaboo-frontend
+      env: node
+      rootDir: client
+      plan: free
+      autoDeploy: true
+      buildCommand: npm install && npm run build
+      publishPath: build/client
+      envVars:
+        - key: NODE_VERSION
+          value: 20
+        # Bake the backend URL into the client bundle at build time so the SPA
+        # can call the API without a server-side injector. Render will fill this
+        # from the backend service URL.
+        - key: VITE_API_BASE
+          fromService:
+            name: peekaboo-api
+            type: url
+        # Keep a runtime API_BASE too (optional) for any code that reads it at runtime
+        - key: API_BASE
+          fromService:
+            name: peekaboo-api
+            type: url
