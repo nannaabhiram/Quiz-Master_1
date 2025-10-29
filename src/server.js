@@ -242,23 +242,17 @@ app.post('/api/student/answer', async (req, res) => {
   }
 });
 
-// Serve static files from client build
-app.use(express.static(path.join(__dirname, '../client/dist')));
-
-// API 404 handler - must come BEFORE the catch-all
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
+// Catch-all for non-API routes (React frontend)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'), (err) => {
+    if (err) res.status(500).send('Error serving React app');
+  });
 });
 
-// Catch-all handler for React routes (must be LAST)
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, '../client/dist/index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      console.error('Error serving index.html:', err);
-      res.status(500).send('Error serving React app');
-    }
-  });
+// ✅ FIXED: 404 handler for API routes (regex version — no path-to-regexp error)
+app.all(/^\/api\/.*/, (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
 // Start server
