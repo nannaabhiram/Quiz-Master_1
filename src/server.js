@@ -256,8 +256,14 @@ app.all(/^\/api\/.*/, (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// ✅ Serve React app for all non-API routes (catch-all for SPA)
-app.get('*', (req, res) => {
+// ✅ Serve React app for all non-API routes using middleware (avoids path-to-regexp)
+app.use((req, res, next) => {
+  // Skip if this is an API route (already handled above)
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Serve React app for all other routes
   const indexPath = path.join(__dirname, '../client/build/client/index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
