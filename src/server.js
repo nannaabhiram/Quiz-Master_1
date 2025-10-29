@@ -434,7 +434,7 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Add this at the end of server.js to serve React app for all non-API routes
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
