@@ -40,18 +40,16 @@ function getNetworkIP() {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// Minimal CORS for local dev (adjust as needed)
+// Minimal CORS for local dev and production
 app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
-    'https://peekaboo-73vd.onrender.com', // Add your production domain here if needed
+    'https://peekaboo-73vd.onrender.com', // production domain
   ];
-  
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
-  
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -65,10 +63,9 @@ if (!process.env.MONGO_URI) {
 
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log('Connected to MongoDB Atlas!'))
-  .catch((err) => console.error('Error connecting to MongoDB:', err.message || err));
+  .then(() => console.log('✅ Connected to MongoDB Atlas!'))
+  .catch((err) => console.error('❌ Error connecting to MongoDB:', err.message || err));
 
-// Extra connection diagnostics
 mongoose.connection.on('connected', () => console.log('[mongoose] connected'));
 mongoose.connection.on('disconnected', () => console.log('[mongoose] disconnected'));
 mongoose.connection.on('reconnected', () => console.log('[mongoose] reconnected'));
@@ -104,11 +101,11 @@ app.get('/health', (req, res) => {
 // Network info
 app.get('/api/network-info', (req, res) => {
   const networkIP = getNetworkIP();
-  res.json({ 
-    networkIP, 
+  res.json({
+    networkIP,
     port: PORT,
     apiBase: `http://${networkIP}:${PORT}`,
-    frontendUrl: `http://${networkIP}:5173`
+    frontendUrl: `http://${networkIP}:5173`,
   });
 });
 
@@ -130,7 +127,7 @@ app.post('/api/admin/quizzes', async (req, res) => {
           options: q.options,
           correctAnswer: q.correctAnswer,
           points: q.points || 1000,
-          quizId: newQuiz._id
+          quizId: newQuiz._id,
         });
         return newQuestion.save();
       })
@@ -212,9 +209,12 @@ app.post('/api/student/answer', async (req, res) => {
     const state = quizState.get(pid);
     if (!state) return res.status(404).json({ error: 'Quiz not started' });
 
-    const qdocs = await Question.find({ quizId: pid }).sort({ _id: 1 }).skip(state.currentIndex).limit(1).select('options correctAnswer points');
+    const qdocs = await Question.find({ quizId: pid })
+      .sort({ _id: 1 })
+      .skip(state.currentIndex)
+      .limit(1)
+      .select('options correctAnswer points');
     const q = qdocs[0];
-
     if (!q) return res.status(404).json({ error: 'No question found' });
 
     const chosen = q.options[answer];
@@ -225,8 +225,8 @@ app.post('/api/student/answer', async (req, res) => {
     const totalPoints = basePoints + speedBonus;
 
     if (isCorrect) player.score += totalPoints;
-
     bucket.set(String(name), player);
+
     res.json({ ok: true, correct: isCorrect, score: player.score, totalPoints });
   } catch (err) {
     console.error('Answer error:', err);
@@ -234,7 +234,7 @@ app.post('/api/student/answer', async (req, res) => {
   }
 });
 
-// Catch-all handler for non-API routes (serves React app)
+// Catch-all for non-API routes (React frontend)
 app.use((req, res, next) => {
   if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(__dirname, '../client/dist/index.html'), (err) => {
@@ -242,15 +242,15 @@ app.use((req, res, next) => {
   });
 });
 
-// ✅ FIXED: 404 handler for API routes (safe for Node 20)
-app.all('/api/*', (req, res) => {
+// ✅ FIXED: 404 handler for API routes (regex version — no path-to-regexp error)
+app.all(/^\/api\/.*/, (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   const networkIP = getNetworkIP();
-  console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`Network access: http://${networkIP}:${PORT}`);
-  console.log(`Production URL: https://peekaboo-lp6y.onrender.com`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🌐 Network access: http://${networkIP}:${PORT}`);
+  console.log(`🌍 Production URL: https://peekaboo-lp6y.onrender.com`);
 });
