@@ -426,17 +426,29 @@ app.get('/api/student/quiz-by-code', async (req, res) => {
   }
 });
 
+// Catch-all handler for non-API routes (serves React app)
+app.use((req, res, next) => {
+  // Skip if this is an API route
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  
+  // Serve the React app for all other routes
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'), (err) => {
+    if (err) {
+      res.status(500).send('Error serving React app');
+    }
+  });
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   const networkIP = getNetworkIP();
   console.log(`Server is running on http://localhost:${PORT}`);
   console.log(`Network access: http://${networkIP}:${PORT}`);
   console.log(`Production URL: https://peekaboo-lp6y.onrender.com`);
-});
-
-// Add this at the end of server.js to serve React app for all non-API routes
-app.get('/*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
-  }
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
