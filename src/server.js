@@ -38,7 +38,8 @@ function getNetworkIP() {
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve static files from React build directory
+app.use(express.static(path.join(__dirname, '../client/build/client')));
 
 // Update the CORS middleware section
 app.use((req, res, next) => {
@@ -253,6 +254,17 @@ app.use((req, res, next) => {
 // ✅ FIXED: 404 handler for API routes (regex version — no path-to-regexp error)
 app.all(/^\/api\/.*/, (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
+});
+
+// ✅ Serve React app for all non-API routes (catch-all for SPA)
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, '../client/build/client/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error serving React app:', err);
+      res.status(500).json({ error: 'Error serving frontend application' });
+    }
+  });
 });
 
 // Start server
