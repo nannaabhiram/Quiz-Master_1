@@ -5,6 +5,10 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -14,6 +18,7 @@ export default defineConfig({
         target: process.env.VITE_API_BASE || 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       }
     },
   },
@@ -22,7 +27,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
-  // Ensure environment variables are available at build time
   define: {
     'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE || ''),
   }

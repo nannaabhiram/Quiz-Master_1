@@ -40,19 +40,27 @@ function getNetworkIP() {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client/dist')));
 
-// Minimal CORS for local dev and production
+// Update the CORS middleware section
 app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
-    'https://peekaboo-73vd.onrender.com', // production domain
+    'http://localhost:3000',
+    'https://peekaboo-73vd.onrender.com',
+    'https://peekaboo-73vd.onrender.com:443'
   ];
+  
   const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
   }
+  
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
   next();
 });
 
@@ -234,17 +242,23 @@ app.post('/api/student/answer', async (req, res) => {
   }
 });
 
-// Catch-all for non-API routes (React frontend)
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'), (err) => {
-    if (err) res.status(500).send('Error serving React app');
-  });
+// Serve static files from client build
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// API 404 handler - must come BEFORE the catch-all
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// ✅ FIXED: 404 handler for API routes (regex version — no path-to-regexp error)
-app.all(/^\/api\/.*/, (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
+// Catch-all handler for React routes (must be LAST)
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, '../client/dist/index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(500).send('Error serving React app');
+    }
+  });
 });
 
 // Start server

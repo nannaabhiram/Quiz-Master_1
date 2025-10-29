@@ -2,10 +2,9 @@
 let cachedApiBase: string | null = null;
 
 export async function getApiBase(): Promise<string> {
-  // Return cached value when available
   if (cachedApiBase) return cachedApiBase;
 
-  // 1) Runtime-injected API base (SSR or server-side injector)
+  // 1) Runtime-injected API base (SSR)
   try {
     if (typeof window !== 'undefined') {
       const runtime = (window as any).__API_BASE__;
@@ -15,10 +14,10 @@ export async function getApiBase(): Promise<string> {
       }
     }
   } catch (e) {
-    // ignore and continue to next option
+    // ignore
   }
 
-  // 2) Build-time Vite variable
+  // 2) Build-time environment variable
   try {
     const viteBase = (import.meta as any)?.env?.VITE_API_BASE;
     if (viteBase && typeof viteBase === 'string') {
@@ -26,39 +25,40 @@ export async function getApiBase(): Promise<string> {
       return cachedApiBase;
     }
   } catch (e) {
-    // continue to dynamic detection
+    // continue
   }
 
-  // 3) Production detection
+  // 3) Dynamic detection for production
   if (typeof window !== 'undefined') {
     const currentHost = window.location.hostname;
-    const isProduction = currentHost.includes('onrender.com') || currentHost.includes('herokuapp.com') || currentHost.includes('vercel.app');
+    const isRender = currentHost.includes('onrender.com');
     
-    if (isProduction) {
-      // For production, API is usually on the same domain
-      const protocol = window.location.protocol; // Will be 'https:'
-      cachedApiBase = `${protocol}//${currentHost}`;
+    if (isRender) {
+      // On Render, both frontend and backend are on same domain
+      cachedApiBase = window.location.origin;
+      return cachedApiBase;
     } else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+      // Local development
       cachedApiBase = 'http://localhost:3000';
     } else {
-      // Local network (development)
+      // Local network development
       cachedApiBase = `http://${currentHost}:3000`;
     }
 
-    // Test if the API is reachable (only for non-production)
-    if (!isProduction) {
+    // Test API connectivity (development only)
+    if (!isRender) {
       try {
         const response = await fetch(`${cachedApiBase}/health`);
         if (response.ok) return cachedApiBase;
       } catch (error) {
-        console.warn('Failed to detect API base automatically:', error);
+        console.warn('Failed to connect to API at', cachedApiBase);
       }
     }
     
     return cachedApiBase;
   }
 
-  // Final fallback
+  // Fallback
   cachedApiBase = 'http://localhost:3000';
   return cachedApiBase;
 }
