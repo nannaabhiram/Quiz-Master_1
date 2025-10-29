@@ -4,9 +4,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const os = require('os');
 
-// Load environment variables explicitly from src/.env, but allow root .env to override if present
+// Load environment variables - check both src/.env and root .env
 const srcEnvPath = path.join(__dirname, '.env');
-const rootEnvPath = path.resolve(process.cwd(), '.env');
+const rootEnvPath = path.join(__dirname, '..', '.env'); // Fixed: Always go up one level from src/
 let usedEnv = null;
 if (fs.existsSync(rootEnvPath)) {
   require('dotenv').config({ path: rootEnvPath, override: true });

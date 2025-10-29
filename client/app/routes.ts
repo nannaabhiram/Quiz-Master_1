@@ -7,4 +7,6 @@ export default [
   route("admin", "routes/admin.tsx"),
   route("student", "routes/student.tsx"),
   route("host", "routes/host.tsx"),
+  // Handle favicon.ico to prevent error
+  route("favicon.ico", "routes/favicon.tsx"),
 ] satisfies RouteConfig;
