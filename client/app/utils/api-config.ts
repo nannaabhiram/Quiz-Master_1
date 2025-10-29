@@ -18,9 +18,8 @@ export async function getApiBase(): Promise<string> {
     // ignore and continue to next option
   }
 
-  // 2) Build-time Vite variable (used for static SPA deploys)
+  // 2) Build-time Vite variable
   try {
-    // import.meta.env is available in Vite-built code; use any to avoid TS errors
     const viteBase = (import.meta as any)?.env?.VITE_API_BASE;
     if (viteBase && typeof viteBase === 'string') {
       cachedApiBase = viteBase;
@@ -30,24 +29,33 @@ export async function getApiBase(): Promise<string> {
     // continue to dynamic detection
   }
 
-  // 3) Dynamic detection (local/dev fallback)
-  try {
-    // Only run this in a browser environment
-    if (typeof window !== 'undefined') {
-      const currentHost = window.location.hostname;
-      if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
-        cachedApiBase = 'http://localhost:3000';
-      } else {
-        // Assume API is on same host at port 3000 (use http)
-        cachedApiBase = `http://${currentHost}:3000`;
-      }
-
-      // Test if the API is reachable
-      const response = await fetch(`${cachedApiBase}/health`);
-      if (response.ok) return cachedApiBase;
+  // 3) Production detection
+  if (typeof window !== 'undefined') {
+    const currentHost = window.location.hostname;
+    const isProduction = currentHost.includes('onrender.com') || currentHost.includes('herokuapp.com') || currentHost.includes('vercel.app');
+    
+    if (isProduction) {
+      // For production, API is usually on the same domain
+      const protocol = window.location.protocol; // Will be 'https:'
+      cachedApiBase = `${protocol}//${currentHost}`;
+    } else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+      cachedApiBase = 'http://localhost:3000';
+    } else {
+      // Local network (development)
+      cachedApiBase = `http://${currentHost}:3000`;
     }
-  } catch (error) {
-    console.warn('Failed to detect API base automatically:', error);
+
+    // Test if the API is reachable (only for non-production)
+    if (!isProduction) {
+      try {
+        const response = await fetch(`${cachedApiBase}/health`);
+        if (response.ok) return cachedApiBase;
+      } catch (error) {
+        console.warn('Failed to detect API base automatically:', error);
+      }
+    }
+    
+    return cachedApiBase;
   }
 
   // Final fallback
@@ -55,7 +63,6 @@ export async function getApiBase(): Promise<string> {
   return cachedApiBase;
 }
 
-// Reset cache when network changes
 export function resetApiConfig() {
   cachedApiBase = null;
 }

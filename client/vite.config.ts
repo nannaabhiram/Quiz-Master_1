@@ -11,11 +11,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.API_BASE || 'http://localhost:3000',
+        target: process.env.VITE_API_BASE || 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
-        // optional: rewrite if your backend expects a different path
-        // rewrite: (path) => path.replace(/^\/api/, '/api')
       }
     },
   },
@@ -23,5 +21,9 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+  },
+  // Ensure environment variables are available at build time
+  define: {
+    'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE || ''),
   }
 });

@@ -40,9 +40,21 @@ function getNetworkIP() {
 
 // Middleware
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../client/dist')));
+
 // Minimal CORS for local dev (adjust as needed)
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'https://peekaboo-73vd.onrender.com',
+    // Add your actual production domain
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -419,4 +431,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${PORT}`);
   console.log(`Network access: http://${networkIP}:${PORT}`);
   console.log(`Production URL: https://peekaboo-lp6y.onrender.com`);
+});
+
+// Add this at the end of server.js to serve React app for all non-API routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
 });
