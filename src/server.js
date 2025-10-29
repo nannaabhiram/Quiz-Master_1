@@ -71,7 +71,12 @@ if (!process.env.MONGO_URI) {
 }
 
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    minPoolSize: 5, // Maintain minimum 5 socket connections
+  })
   .then(() => console.log('✅ Connected to MongoDB Atlas!'))
   .catch((err) => console.error('❌ Error connecting to MongoDB:', err.message || err));
 
@@ -102,9 +107,36 @@ function generateCode(len = 6) {
 
 // ======= ROUTES =======
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', db: mongoose.connection.readyState });
+// Health check with database test
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection by performing a simple operation
+    const dbState = mongoose.connection.readyState;
+    let dbTest = 'unknown';
+    
+    if (dbState === 1) { // Connected
+      try {
+        // Simple ping to test if database operations work
+        await mongoose.connection.db.admin().ping();
+        dbTest = 'ok';
+      } catch (err) {
+        dbTest = 'error: ' + err.message;
+      }
+    }
+    
+    res.json({ 
+      status: 'ok', 
+      db: dbState,
+      dbTest: dbTest,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Network info
@@ -126,29 +158,51 @@ app.post('/api/admin/quizzes', async (req, res) => {
       return res.status(400).json({ error: 'Title and questions are required' });
     }
 
+    // Add timeout to mongoose operations
+    const timeoutMs = 8000; // 8 seconds timeout
+    
     const newQuiz = new Quiz({ title });
-    await newQuiz.save();
+    await Promise.race([
+      newQuiz.save(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Quiz save timeout')), timeoutMs)
+      )
+    ]);
 
-    const questionDocs = await Promise.all(
-      questions.map((q) => {
-        const newQuestion = new Question({
-          questionText: q.questionText,
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-          points: q.points || 1000,
-          quizId: newQuiz._id,
-        });
-        return newQuestion.save();
-      })
-    );
+    const questionDocs = await Promise.race([
+      Promise.all(
+        questions.map((q) => {
+          const newQuestion = new Question({
+            questionText: q.questionText,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            points: q.points || 1000,
+            quizId: newQuiz._id,
+          });
+          return newQuestion.save();
+        })
+      ),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Questions save timeout')), timeoutMs)
+      )
+    ]);
 
     newQuiz.questions = questionDocs.map((q) => q._id);
-    await newQuiz.save();
+    await Promise.race([
+      newQuiz.save(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Quiz update timeout')), timeoutMs)
+      )
+    ]);
 
     res.status(201).json(newQuiz);
   } catch (err) {
     console.error('Create quiz error:', err);
-    res.status(500).json({ error: err?.message || 'Failed to create quiz' });
+    if (err.message.includes('timeout')) {
+      res.status(408).json({ error: 'Database operation timed out. Please try again.' });
+    } else {
+      res.status(500).json({ error: err?.message || 'Failed to create quiz' });
+    }
   }
 });
 
