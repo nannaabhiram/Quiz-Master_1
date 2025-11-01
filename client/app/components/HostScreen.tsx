@@ -534,7 +534,7 @@ const HostScreen: React.FC = () => {
               {currentQuestion < questions.length - 1 ? (
                 <>Continue <ChevronRight className="ml-2" size={24} /></>
               ) : (
-                'Final Results'
+                'Exit Quize'
               )}
             </button>
           </div>

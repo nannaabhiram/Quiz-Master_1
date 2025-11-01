@@ -446,12 +446,15 @@ app.post('/api/student/answer', async (req, res) => {
     if (!quizId || !name) return res.status(400).json({ error: 'quizId and name are required' });
 
     const pid = String(quizId);
-    const bucket = getQuizParticipants(pid);
-    const player = bucket.get(String(name));
-    if (!player) return res.status(404).json({ error: 'Player not joined' });
-
+    const playerName = String(name);
+    
+    // Get quiz state with participants
     const state = quizState.get(pid);
     if (!state) return res.status(404).json({ error: 'Quiz not started' });
+    
+    // Get player from quiz state participants
+    const player = state.participants.get(playerName);
+    if (!player) return res.status(404).json({ error: 'Player not joined' });
 
     const qdocs = await Question.find({ quizId: pid })
       .sort({ _id: 1 })
@@ -468,8 +471,15 @@ app.post('/api/student/answer', async (req, res) => {
     const speedBonus = Math.floor((tl / 20) * 500);
     const totalPoints = basePoints + speedBonus;
 
-    if (isCorrect) player.score += totalPoints;
-    bucket.set(String(name), player);
+    if (isCorrect) {
+      player.score += totalPoints;
+      console.log(`Player "${playerName}" scored ${totalPoints} points! Total: ${player.score}`);
+    } else {
+      console.log(`Player "${playerName}" answered incorrectly`);
+    }
+    
+    // Save updated player back to state
+    state.participants.set(playerName, player);
 
     res.json({ ok: true, correct: isCorrect, score: player.score, totalPoints });
   } catch (err) {
