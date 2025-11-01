@@ -164,10 +164,8 @@ const HostScreen: React.FC = () => {
           const state = await stateRes.json();
           console.log('Quiz state:', state);
           
-          // If quiz has started and we have a valid current index
-          if (state.started && typeof state.currentIndex === 'number' && state.currentIndex >= 0) {
-            // Update current question index if it changed
-            if (state.currentIndex !== currentQuestion) {
+          // If quiz has started and we have a valid current index and it changed
+            if (state.started && typeof state.currentIndex === 'number' && state.currentIndex >= 0 && state.currentIndex !== currentQuestion) {
               console.log(`Admin advanced to question ${state.currentIndex}`);
               setCurrentQuestion(state.currentIndex);
               setGameState('question');
@@ -175,7 +173,6 @@ const HostScreen: React.FC = () => {
               setShowAnswers(false);
               setIsQuestionActive(true);
             }
-          }
         }
 
         // Also refresh questions if empty
