@@ -1,13 +1,13 @@
 /* @ts-nocheck */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, Play, Square, Trophy, Clock, Tv, ChevronRight } from 'lucide-react';
+import { Socket } from 'socket.io-client';
 import { getApiBase } from '../utils/api-config';
+import { getSocket } from '../utils/socket';
 import QRCode from 'qrcode';
 
-// Dynamic API base that auto-detects network IP
-let API_BASE = '';
-
 const HostScreen: React.FC = () => {
+  const [apiBase, setApiBase] = useState<string | null>(null);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [quizCode, setQuizCode] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -18,11 +18,13 @@ const HostScreen: React.FC = () => {
   const [showAnswers, setShowAnswers] = useState(false);
   const [isQuestionActive, setIsQuestionActive] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const socketRef = useRef<Socket | null>(null);
 
   // Initialize API base
   useEffect(() => {
     const initApi = async () => {
-      API_BASE = await getApiBase();
+      const base = await getApiBase();
+      setApiBase(base);
     };
     initApi();
   }, []);
@@ -68,8 +70,9 @@ const HostScreen: React.FC = () => {
       
       // Load quiz questions
       const loadQuestions = async () => {
+        if (!apiBase) return; // wait for API base to be ready
         try {
-          const res = await fetch(`${API_BASE}/api/student/quiz-by-code?code=${codeFromUrl}`);
+          const res = await fetch(`${apiBase}/api/student/quiz-by-code?code=${codeFromUrl}`);
           if (res.ok) {
             const data = await res.json();
             if (data.questions) {
@@ -96,16 +99,47 @@ const HostScreen: React.FC = () => {
     if (codeFromUrl) {
       setQuizCode(codeFromUrl);
     }
-  }, []);
+  }, [apiBase]);
+
+  // create socket once apiBase is known (or fallback to same origin)
+  useEffect(() => {
+    if (socketRef.current) return; // already created
+    const socket = getSocket(apiBase || undefined);
+    socketRef.current = socket;
+
+    return () => {
+      socketRef.current = null;
+    };
+  }, [apiBase]);
+
+  // Join quiz room on socket
+  useEffect(() => {
+    const s = socketRef.current;
+    if (!s || !quizId) return;
+
+    // named handler
+    const handleQuizStarted = (data: any) => {
+      console.log('quizStarted', data);
+      // update UI or navigate
+    };
+
+    s.emit('joinQuiz', quizId);
+    s.on('quizStarted', handleQuizStarted);
+
+    return () => {
+      s.off('quizStarted', handleQuizStarted);
+      s.emit('leaveQuiz', quizId);
+    };
+  }, [quizId]);
 
   // Poll for players and quiz state
   useEffect(() => {
-    if (!quizId) return;
+    if (!quizId || !apiBase) return;
     
     const interval = setInterval(async () => {
       try {
         // Get participants
-        const playersRes = await fetch(`${API_BASE}/api/admin/quizzes/${quizId}/participants`);
+        const playersRes = await fetch(`${apiBase}/api/admin/quizzes/${quizId}/participants`);
         if (playersRes.ok) {
           const playersList = await playersRes.json();
           setPlayers(Array.isArray(playersList) ? playersList : []);
@@ -116,16 +150,16 @@ const HostScreen: React.FC = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [quizId]);
+  }, [quizId, apiBase]);
 
   // Poll for current question index and sync questions
   useEffect(() => {
-    if (!quizId) return;
+    if (!quizId || !apiBase) return;
     
     const interval = setInterval(async () => {
       try {
         // Get current quiz state (includes currentIndex)
-        const stateRes = await fetch(`${API_BASE}/api/student/quizzes/${quizId}/state`);
+        const stateRes = await fetch(`${apiBase}/api/student/quizzes/${quizId}/state`);
         if (stateRes.ok) {
           const state = await stateRes.json();
           console.log('Quiz state:', state);
@@ -146,7 +180,7 @@ const HostScreen: React.FC = () => {
 
         // Also refresh questions if empty
         if (questions.length === 0 && quizCode) {
-          const qRes = await fetch(`${API_BASE}/api/student/quiz-by-code?code=${quizCode}`);
+          const qRes = await fetch(`${apiBase}/api/student/quiz-by-code?code=${quizCode}`);
           if (qRes.ok) {
             const qData = await qRes.json();
             if (qData.questions && qData.questions.length > 0) {
@@ -167,7 +201,7 @@ const HostScreen: React.FC = () => {
     }, 2000); // Poll every 2 seconds
 
     return () => clearInterval(interval);
-  }, [quizId, quizCode, currentQuestion, questions.length]);
+  }, [quizId, quizCode, currentQuestion, questions.length, apiBase]);
 
   // Timer countdown
   useEffect(() => {
@@ -189,8 +223,9 @@ const HostScreen: React.FC = () => {
     setIsQuestionActive(true);
     
     // Advance question on server
+    if (!apiBase) return;
     try {
-      await fetch(`${API_BASE}/api/admin/quizzes/${quizId}/next`, { method: 'PUT' });
+      await fetch(`${apiBase}/api/admin/quizzes/${quizId}/next`, { method: 'PUT' });
     } catch (error) {
       console.error('Error advancing question:', error);
     }
@@ -204,8 +239,9 @@ const HostScreen: React.FC = () => {
 
   const nextQuestion = async () => {
     // Advance question on server; let polling update currentQuestion
+    if (!apiBase) return;
     try {
-      await fetch(`${API_BASE}/api/admin/quizzes/${quizId}/next`, { method: 'PUT' });
+      await fetch(`${apiBase}/api/admin/quizzes/${quizId}/next`, { method: 'PUT' });
       setGameState('question');
       setTimeLeft(20);
       setShowAnswers(false);
