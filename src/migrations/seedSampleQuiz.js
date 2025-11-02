@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 // Load models
-const Quiz = require(path.join(__dirname, '..', 'models', 'Quiz.js'));
+const quiz = require(path.join(__dirname, '..', 'models', 'quiz.js'));
 const Question = require(path.join(__dirname, '..', 'models', 'Question.js'));
 
 async function run() {
@@ -13,14 +13,14 @@ async function run() {
   console.log('[seed] Connected');
 
   try {
-    const title = 'Sample Quiz – General Knowledge';
-    let quiz = await Quiz.findOne({ title });
+    const title = 'Sample quiz – General Knowledge';
+    let quiz = await quiz.findOne({ title });
     if (!quiz) {
-      quiz = new Quiz({ title, status: 'inactive' });
+      quiz = new quiz({ title, status: 'inactive' });
       await quiz.save();
       console.log('[seed] Created quiz:', quiz._id.toString());
     } else {
-      console.log('[seed] Quiz already exists:', quiz._id.toString());
+      console.log('[seed] quiz already exists:', quiz._id.toString());
     }
 
     const existingQs = await Question.find({ quizId: quiz._id });
@@ -59,7 +59,7 @@ async function run() {
       await quiz.save();
       console.log(`[seed] Inserted ${saved.length} questions`);
     } else {
-      console.log(`[seed] Quiz already has ${existingQs.length} questions`);
+      console.log(`[seed] quiz already has ${existingQs.length} questions`);
     }
   } catch (e) {
     console.error('[seed] Error:', e?.message || e);

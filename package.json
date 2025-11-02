@@ -1,7 +1,7 @@
 {
   "name": "quiz-master",
   "version": "1.0.0",
-  "description": "Interactive Quiz Platform - Backend Server",
+  "description": "Interactive quiz Platform - Backend Server",
   "main": "src/server.js",
   "scripts": {
     "build": "cd client && npm install && npm run build",

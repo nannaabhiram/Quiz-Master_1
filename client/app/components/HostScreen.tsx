@@ -8,8 +8,8 @@ import QRCode from 'qrcode';
 
 const HostScreen: React.FC = () => {
   const [apiBase, setApiBase] = useState<string | null>(null);
-  const [quizId, setQuizId] = useState<string | null>(null);
-  const [quizCode, setQuizCode] = useState<string | null>(null);
+  const [quizId, setquizId] = useState<string | null>(null);
+  const [quizCode, setquizCode] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [questions, setQuestions] = useState<any[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
@@ -66,7 +66,7 @@ const HostScreen: React.FC = () => {
     const codeFromUrl = urlParams.get('code');
     
     if (quizIdFromUrl) {
-      setQuizId(quizIdFromUrl);
+      setquizId(quizIdFromUrl);
       
       // Load quiz questions
       const loadQuestions = async () => {
@@ -97,7 +97,7 @@ const HostScreen: React.FC = () => {
       }
     }
     if (codeFromUrl) {
-      setQuizCode(codeFromUrl);
+      setquizCode(codeFromUrl);
     }
   }, [apiBase]);
 
@@ -118,17 +118,17 @@ const HostScreen: React.FC = () => {
     if (!s || !quizId) return;
 
     // named handler
-    const handleQuizStarted = (data: any) => {
+    const handlequizStarted = (data: any) => {
       console.log('quizStarted', data);
       // update UI or navigate
     };
 
-    s.emit('joinQuiz', quizId);
-    s.on('quizStarted', handleQuizStarted);
+    s.emit('joinquiz', quizId);
+    s.on('quizStarted', handlequizStarted);
 
     return () => {
-      s.off('quizStarted', handleQuizStarted);
-      s.emit('leaveQuiz', quizId);
+      s.off('quizStarted', handlequizStarted);
+      s.emit('leavequiz', quizId);
     };
   }, [quizId]);
 
@@ -162,7 +162,7 @@ const HostScreen: React.FC = () => {
         const stateRes = await fetch(`${apiBase}/api/student/quizzes/${quizId}/state`);
         if (stateRes.ok) {
           const state = await stateRes.json();
-          console.log('Quiz state:', state);
+          console.log('quiz state:', state);
           
           // If quiz has started and we have a valid current index and it changed
             if (state.started && typeof state.currentIndex === 'number' && state.currentIndex >= 0 && state.currentIndex !== currentQuestion) {
@@ -290,7 +290,7 @@ const HostScreen: React.FC = () => {
                 <div className="bg-white p-6 rounded-2xl inline-block">
                   <img 
                     src={qrCodeUrl} 
-                    alt="Scan QR Code to Join Quiz" 
+                    alt="Scan QR Code to Join quiz" 
                     className="w-48 h-48 mx-auto"
                   />
                 </div>
@@ -323,7 +323,7 @@ const HostScreen: React.FC = () => {
                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-xl text-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
                 <Play className="mr-2" size={24} />
-                Start Quiz
+                Start quiz
               </button>
             </div>
             
@@ -452,7 +452,7 @@ const HostScreen: React.FC = () => {
                   {currentQuestion < questions.length - 1 ? (
                     <>Next Question <ChevronRight className="ml-2" size={24} /></>
                   ) : (
-                    'Finish Quiz'
+                    'Finish quiz'
                   )}
                 </button>
               </>
@@ -531,7 +531,7 @@ const HostScreen: React.FC = () => {
               {currentQuestion < questions.length - 1 ? (
                 <>Continue <ChevronRight className="ml-2" size={24} /></>
               ) : (
-                'Exit Quize'
+                'Exit quiz'
               )}
             </button>
           </div>
@@ -544,7 +544,7 @@ const HostScreen: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-600 via-blue-600 to-purple-600 flex items-center justify-center p-8">
       <div className="text-center text-white">
         <Trophy size={64} className="mx-auto mb-4" />
-        <h1 className="text-4xl font-bold mb-4">Quiz Complete!</h1>
+        <h1 className="text-4xl font-bold mb-4">quiz Complete!</h1>
         <p className="text-xl">Thanks for playing!</p>
       </div>
     </div>

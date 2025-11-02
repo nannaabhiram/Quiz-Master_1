@@ -16,8 +16,8 @@ async function cleanup() {
     console.log('Recreated questions collection with updated schema');
     
     // Update any quizzes to remove references to deleted questions
-    const Quiz = require('../models/Quiz');
-    await Quiz.updateMany({}, { $set: { questions: [] } });
+    const quiz = require('../models/quiz');
+    await quiz.updateMany({}, { $set: { questions: [] } });
     console.log('Cleared question references from quizzes');
     
     console.log('\n✅ Cleanup complete! You can now restart your server.');

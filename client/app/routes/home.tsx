@@ -2,16 +2,18 @@ import type { Route } from "./+types/home";
 import { Link } from "react-router";
 import { Users, Settings, Gamepad2, Trophy, LogOut, LogIn } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useAdminPath } from "../hooks/useAdminPath";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "peekaboo - Interactive Quiz Platform" },
+    { title: "peekaboo - Interactive quiz Platform" },
     { name: "description", content: "Create and join interactive quizzes in real-time!" },
   ];
 }
 
 export default function Home() {
   const { user, logout } = useAuth();
+  const { adminPath, loading: adminPathLoading } = useAdminPath();
 
   const handleLogout = async () => {
     try {
@@ -87,7 +89,7 @@ export default function Home() {
           </Link>
 
           {/* Admin Option */}
-          <Link to="/admin" className="group">
+          <Link to={adminPath || "/admin"} className="group">
             <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-6 text-center hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl">
               <div className="bg-white/20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
                 <Settings className="text-white" size={40} />
@@ -99,7 +101,9 @@ export default function Home() {
               <div className="bg-white/20 rounded-xl p-3">
                 <div className="flex items-center justify-center text-white/90">
                   <Trophy className="mr-2" size={18} />
-                  <span className="font-medium text-sm">Create amazing quizzes</span>
+                  <span className="font-medium text-sm">
+                    {adminPathLoading ? "Loading..." : "Create amazing quizzes"}
+                  </span>
                 </div>
               </div>
             </div>

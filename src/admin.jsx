@@ -3,15 +3,15 @@ import { Plus, Trash2, Play, Square, Users, Trophy, Clock, Edit3 } from 'lucide-
 
 const AdminPanel = () => {
   const [questions, setQuestions] = useState([]);
-  const [quizActive, setQuizActive] = useState(false);
+  const [quizActive, setquizActive] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [students, setStudents] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [createdQuizId, setCreatedQuizId] = useState(null);
-  const [activeQuizzes, setActiveQuizzes] = useState([]);
-  const [quizTitle, setQuizTitle] = useState('');
+  const [createdquizId, setCreatedquizId] = useState(null);
+  const [activequizzes, setActivequizzes] = useState([]);
+  const [quizTitle, setquizTitle] = useState('');
   const [newQuestion, setNewQuestion] = useState({
     question: '',
     options: ['', '', '', ''],
@@ -46,7 +46,7 @@ const AdminPanel = () => {
         const res = await fetch('/api/student/quizzes');
         if (!res.ok) throw new Error('Failed to fetch active quizzes');
         const data = await res.json();
-        setActiveQuizzes(Array.isArray(data) ? data : []);
+        setActivequizzes(Array.isArray(data) ? data : []);
       } catch (e) {
         // Non-blocking: keep UI working even if this fails
         console.error(e);
@@ -79,7 +79,7 @@ const AdminPanel = () => {
     setEditingIndex(index);
   };
 
-  const saveQuiz = async () => {
+  const savequiz = async () => {
     if (questions.length === 0 || saving) return;
     setError('');
     setSaving(true);
@@ -90,7 +90,7 @@ const AdminPanel = () => {
         correctAnswer: q.options[q.correct]
       }));
 
-      const title = quizTitle.trim() || `Quiz ${new Date().toLocaleString()}`;
+      const title = quizTitle.trim() || `quiz ${new Date().toLocaleString()}`;
       const createRes = await fetch('/api/admin/quizzes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,13 +100,13 @@ const AdminPanel = () => {
         const errBody = await createRes.json().catch(() => ({}));
         throw new Error(errBody.error || 'Failed to create quiz');
       }
-      const createdQuiz = await createRes.json();
-      setCreatedQuizId(createdQuiz._id);
+      const createdquiz = await createRes.json();
+      setCreatedquizId(createdquiz._id);
 
       // Refresh active quizzes (in case server logic ever marks as active later)
       try {
         const res = await fetch('/api/student/quizzes');
-        if (res.ok) setActiveQuizzes(await res.json());
+        if (res.ok) setActivequizzes(await res.json());
       } catch {}
     } catch (e) {
       console.error(e);
@@ -116,7 +116,7 @@ const AdminPanel = () => {
     }
   };
 
-  const startQuiz = async () => {
+  const startquiz = async () => {
     if (questions.length === 0 || saving) return;
     setError('');
     setSaving(true);
@@ -128,7 +128,7 @@ const AdminPanel = () => {
         correctAnswer: q.options[q.correct]
       }));
 
-      const title = quizTitle.trim() || `Quiz ${new Date().toLocaleString()}`;
+      const title = quizTitle.trim() || `quiz ${new Date().toLocaleString()}`;
       const createRes = await fetch('/api/admin/quizzes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -138,12 +138,12 @@ const AdminPanel = () => {
         const errBody = await createRes.json().catch(() => ({}));
         throw new Error(errBody.error || 'Failed to create quiz');
       }
-      const createdQuiz = await createRes.json();
-      const newQuizId = createdQuiz._id;
-      setCreatedQuizId(newQuizId);
+      const createdquiz = await createRes.json();
+      const newquizId = createdquiz._id;
+      setCreatedquizId(newquizId);
 
       // Start the quiz
-      const startRes = await fetch(`/api/admin/quizzes/${newQuizId}/start`, {
+      const startRes = await fetch(`/api/admin/quizzes/${newquizId}/start`, {
         method: 'PUT'
       });
       if (!startRes.ok) {
@@ -152,7 +152,7 @@ const AdminPanel = () => {
       }
 
       // Update local UI state
-      setQuizActive(true);
+      setquizActive(true);
       setCurrentQuestion(0);
       setShowResults(false);
       setStudents([]);
@@ -160,7 +160,7 @@ const AdminPanel = () => {
       // Refresh active quizzes list
       try {
         const res = await fetch('/api/student/quizzes');
-        if (res.ok) setActiveQuizzes(await res.json());
+        if (res.ok) setActivequizzes(await res.json());
       } catch {}
     } catch (e) {
       console.error(e);
@@ -170,8 +170,8 @@ const AdminPanel = () => {
     }
   };
 
-  const stopQuiz = () => {
-    setQuizActive(false);
+  const stopquiz = () => {
+    setquizActive(false);
     setShowResults(true);
   };
 
@@ -179,7 +179,7 @@ const AdminPanel = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      stopQuiz();
+      stopquiz();
     }
   };
 
@@ -200,7 +200,7 @@ const AdminPanel = () => {
           <div className="bg-white rounded-3xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">Quiz Results</h1>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">quiz Results</h1>
               <p className="text-xl text-gray-600">Final Leaderboard</p>
             </div>
 
@@ -235,13 +235,13 @@ const AdminPanel = () => {
               <button
                 onClick={() => {
                   setShowResults(false);
-                  setQuizActive(false);
+                  setquizActive(false);
                   setCurrentQuestion(0);
                   setStudents([]);
                 }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-8 rounded-xl text-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
               >
-                Create New Quiz
+                Create New quiz
               </button>
             </div>
           </div>
@@ -254,11 +254,11 @@ const AdminPanel = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 p-6">
         <div className="max-w-6xl mx-auto">
-          {/* Quiz Control Header */}
+          {/* quiz Control Header */}
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Quiz Active</h2>
+                <h2 className="text-2xl font-bold text-gray-800">quiz Active</h2>
                 <p className="text-gray-600">Question {currentQuestion + 1} of {questions.length}</p>
               </div>
               <div className="flex items-center space-x-4">
@@ -270,14 +270,14 @@ const AdminPanel = () => {
                   onClick={nextQuestion}
                   className="bg-green-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-600 transition-all duration-300"
                 >
-                  {currentQuestion < questions.length - 1 ? 'Next Question' : 'End Quiz'}
+                  {currentQuestion < questions.length - 1 ? 'Next Question' : 'End quiz'}
                 </button>
                 <button
-                  onClick={stopQuiz}
+                  onClick={stopquiz}
                   className="bg-red-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-red-600 transition-all duration-300 flex items-center"
                 >
                   <Square className="mr-2" size={20} />
-                  Stop Quiz
+                  Stop quiz
                 </button>
               </div>
             </div>
@@ -348,7 +348,7 @@ const AdminPanel = () => {
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Quiz Admin Panel</h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">quiz</h1>
             <p className="text-xl text-gray-600">Create and manage your quiz questions</p>
           </div>
         </div>
@@ -362,11 +362,11 @@ const AdminPanel = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">quiz Title</label>
                 <input
                   type="text"
                   value={quizTitle}
-                  onChange={(e) => setQuizTitle(e.target.value)}
+                  onChange={(e) => setquizTitle(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter quiz title (optional)"
                 />
@@ -443,9 +443,9 @@ const AdminPanel = () => {
             </div>
           </div>
 
-          {/* Questions List and Quiz Control */}
+          {/* Questions List and quiz Control */}
           <div className="space-y-6">
-            {/* Quiz Stats */}
+            {/* quiz Stats */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-4 bg-blue-50 rounded-xl">
@@ -464,42 +464,28 @@ const AdminPanel = () => {
                 </div>
               </div>
 
-              {/* Active quizzes from server */}
-              <div className="mt-4 text-left">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Active Quizzes on Server</div>
-                {activeQuizzes.length === 0 ? (
-                  <div className="text-sm text-gray-500">No active quizzes</div>
-                ) : (
-                  <ul className="list-disc list-inside text-sm text-gray-700">
-                    {activeQuizzes.map((q) => (
-                      <li key={q._id || q.title}>{q.title}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
               {error && (
                 <div className="mt-4 text-red-600 text-sm font-medium">{error}</div>
               )}
-              {createdQuizId && (
-                <div className="mt-2 text-green-700 text-sm font-medium">Saved! Quiz ID: {createdQuizId}</div>
+              {createdquizId && (
+                <div className="mt-2 text-green-700 text-sm font-medium">Saved! quiz ID: {createdquizId}</div>
               )}
 
               <button
-                onClick={saveQuiz}
+                onClick={savequiz}
                 disabled={questions.length === 0 || saving}
                 className="w-full mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving...' : 'Save Quiz (Draft)'}
+                {saving ? 'Saving...' : 'Save quiz (Draft)'}
               </button>
 
               <button
-                onClick={startQuiz}
+                onClick={startquiz}
                 disabled={questions.length === 0 || saving}
                 className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 <Play className="mr-2" size={24} />
-                {saving ? 'Starting...' : `Start Quiz (${questions.length} questions)`}
+                {saving ? 'Starting...' : `Start quiz (${questions.length} questions)`}
               </button>
             </div>
 

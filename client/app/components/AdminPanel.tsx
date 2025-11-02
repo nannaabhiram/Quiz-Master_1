@@ -23,16 +23,16 @@ const DEMO_MODE = false;
 
 const AdminPanel: React.FC = () => {
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
-  const [quizActive, setQuizActive] = useState(false);
+  const [quizActive, setquizActive] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [createdQuizId, setCreatedQuizId] = useState<string | null>(null);
-  const [quizCode, setQuizCode] = useState<string | null>(null);
-  const [activeQuizzes, setActiveQuizzes] = useState<any[]>([]);
-  const [quizTitle, setQuizTitle] = useState('');
+  const [createdquizId, setCreatedquizId] = useState<string | null>(null);
+  const [quizCode, setquizCode] = useState<string | null>(null);
+  const [activequizzes, setActivequizzes] = useState<any[]>([]);
+  const [quizTitle, setquizTitle] = useState('');
   const [newQuestion, setNewQuestion] = useState<QuestionItem>({
     question: '',
     options: ['', '', '', ''],
@@ -51,10 +51,10 @@ const AdminPanel: React.FC = () => {
 
   // Poll real participants from server when quiz is active
   useEffect(() => {
-    if (!quizActive || !createdQuizId) return;
+    if (!quizActive || !createdquizId) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/quizzes/${createdQuizId}/participants`);
+        const res = await fetch(`${API_BASE}/api/admin/quizzes/${createdquizId}/participants`);
         if (res.ok) {
           const list = await res.json();
           setStudents(Array.isArray(list) ? list : []);
@@ -62,7 +62,7 @@ const AdminPanel: React.FC = () => {
       } catch {}
     }, 2000);
     return () => clearInterval(interval);
-  }, [quizActive, createdQuizId]);
+  }, [quizActive, createdquizId]);
 
   useEffect(() => {
     const fetchActive = async () => {
@@ -70,7 +70,7 @@ const AdminPanel: React.FC = () => {
         const res = await fetch(`${API_BASE}/api/student/quizzes`);
         if (!res.ok) throw new Error('Failed to fetch active quizzes');
         const data = await res.json();
-        setActiveQuizzes(Array.isArray(data) ? data : []);
+        setActivequizzes(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
       }
@@ -102,7 +102,7 @@ const AdminPanel: React.FC = () => {
     setEditingIndex(index);
   };
 
-  const saveQuiz = async () => {
+  const savequiz = async () => {
     if (questions.length === 0 || saving) return;
     setError('');
     setSaving(true);
@@ -114,7 +114,7 @@ const AdminPanel: React.FC = () => {
         points: q.points || 1000
       }));
 
-      const title = quizTitle.trim() || `Quiz ${new Date().toLocaleString()}`;
+      const title = quizTitle.trim() || `quiz ${new Date().toLocaleString()}`;
       const createRes = await fetch(`${API_BASE}/api/admin/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,12 +124,12 @@ const AdminPanel: React.FC = () => {
         const errBody = await createRes.json().catch(() => ({}));
         throw new Error(errBody.error || 'Failed to create quiz');
       }
-      const createdQuiz = await createRes.json();
-      setCreatedQuizId(createdQuiz._id);
+      const createdquiz = await createRes.json();
+      setCreatedquizId(createdquiz._id);
 
       try {
         const res = await fetch(`${API_BASE}/api/student/quizzes`);
-        if (res.ok) setActiveQuizzes(await res.json());
+        if (res.ok) setActivequizzes(await res.json());
       } catch {}
     } catch (e: any) {
       console.error(e);
@@ -139,7 +139,7 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const startQuiz = async () => {
+  const startquiz = async () => {
     if (questions.length === 0 || saving) return;
     setError('');
     setSaving(true);
@@ -151,7 +151,7 @@ const AdminPanel: React.FC = () => {
         points: q.points || 1000
       }));
 
-      const title = quizTitle.trim() || `Quiz ${new Date().toLocaleString()}`;
+      const title = quizTitle.trim() || `quiz ${new Date().toLocaleString()}`;
       const createRes = await fetch(`${API_BASE}/api/admin/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,11 +161,11 @@ const AdminPanel: React.FC = () => {
         const errBody = await createRes.json().catch(() => ({}));
         throw new Error(errBody.error || 'Failed to create quiz');
       }
-      const createdQuiz = await createRes.json();
-      const newQuizId = createdQuiz._id;
-      setCreatedQuizId(newQuizId);
+      const createdquiz = await createRes.json();
+      const newquizId = createdquiz._id;
+      setCreatedquizId(newquizId);
 
-      const startRes = await fetch(`${API_BASE}/api/admin/quizzes/${newQuizId}/start`, {
+      const startRes = await fetch(`${API_BASE}/api/admin/quizzes/${newquizId}/start`, {
         method: 'PUT'
       });
       if (!startRes.ok) {
@@ -173,9 +173,9 @@ const AdminPanel: React.FC = () => {
         throw new Error(errBody.error || 'Failed to start quiz');
       }
       const started = await startRes.json();
-      setQuizCode(started.code || null);
+      setquizCode(started.code || null);
 
-      setQuizActive(true);
+      setquizActive(true);
       setCurrentQuestion(-1); // Start at -1 to show "Start First Question"
       setShowResults(false);
       setStudents([]);
@@ -184,11 +184,11 @@ const AdminPanel: React.FC = () => {
       try {
         const dbQuestionsRes = await fetch(`${API_BASE}/api/student/quiz-by-code?code=${started.code}`);
         if (dbQuestionsRes.ok) {
-          const dbQuizData = await dbQuestionsRes.json();
-          console.log('Raw database quiz data:', dbQuizData);
-          if (dbQuizData.questions && Array.isArray(dbQuizData.questions)) {
+          const dbquizData = await dbQuestionsRes.json();
+          console.log('Raw database quiz data:', dbquizData);
+          if (dbquizData.questions && Array.isArray(dbquizData.questions)) {
             // Update the questions array to match what students see
-            const dbQuestions = dbQuizData.questions.map((q: any) => ({
+            const dbQuestions = dbquizData.questions.map((q: any) => ({
               question: q.questionText || q.question,
               options: q.options || [],
               correct: q.options ? Math.max(0, q.options.indexOf(q.correctAnswer)) : 0,
@@ -204,14 +204,14 @@ const AdminPanel: React.FC = () => {
       }
 
       // Generate host screen URL
-      const hostUrl = `${window.location.origin}/host?quizId=${newQuizId}&code=${started.code}`;
+      const hostUrl = `${window.location.origin}/host?quizId=${newquizId}&code=${started.code}`;
       
       // Show host screen instructions
-      setError(`Quiz started! 🎉\n\nHost Screen URL (for projector):\n${hostUrl}\n\nStudent join at: ${window.location.origin}/student\nGame PIN: ${started.code}`);
+      setError(`quiz started! 🎉\n\nHost Screen URL (for projector):\n${hostUrl}\n\nStudent join at: ${window.location.origin}/student\nGame PIN: ${started.code}`);
 
       try {
         const res = await fetch(`${API_BASE}/api/student/quizzes`);
-        if (res.ok) setActiveQuizzes(await res.json());
+        if (res.ok) setActivequizzes(await res.json());
       } catch {}
     } catch (e: any) {
       console.error(e);
@@ -221,15 +221,15 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const stopQuiz = () => {
-    setQuizActive(false);
+  const stopquiz = () => {
+    setquizActive(false);
     setShowResults(true);
   };
 
   const nextQuestion = async () => {
     try {
-      if (!createdQuizId) return;
-      const res = await fetch(`${API_BASE}/api/admin/quizzes/${createdQuizId}/next`, { method: 'PUT' });
+      if (!createdquizId) return;
+      const res = await fetch(`${API_BASE}/api/admin/quizzes/${createdquizId}/next`, { method: 'PUT' });
       if (res.ok) {
         const st = await res.json();
         if (typeof st.currentIndex === 'number') {
@@ -237,7 +237,7 @@ const AdminPanel: React.FC = () => {
           
           // Check if we've moved beyond the last question (quiz completion)
           if (st.currentIndex >= questions.length) {
-            stopQuiz();
+            stopquiz();
             return;
           }
         }
@@ -246,7 +246,7 @@ const AdminPanel: React.FC = () => {
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
         } else {
-          stopQuiz();
+          stopquiz();
         }
       }
     } catch {
@@ -254,7 +254,7 @@ const AdminPanel: React.FC = () => {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
-        stopQuiz();
+        stopquiz();
       }
     }
   };
@@ -276,7 +276,7 @@ const AdminPanel: React.FC = () => {
           <div className="bg-white rounded-3xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">Quiz Results</h1>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">quiz Results</h1>
               <p className="text-xl text-gray-600">Final Leaderboard</p>
             </div>
             <div className="max-w-2xl mx-auto">
@@ -312,13 +312,13 @@ const AdminPanel: React.FC = () => {
               <button
                 onClick={() => {
                   setShowResults(false);
-                  setQuizActive(false);
+                  setquizActive(false);
                   setCurrentQuestion(0);
                   setStudents([]);
                 }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-8 rounded-xl text-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
               >
-                Create New Quiz
+                Create New quiz
               </button>
             </div>
           </div>
@@ -331,11 +331,11 @@ const AdminPanel: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-teal-500 p-6">
         <div className="max-w-6xl mx-auto">
-          {/* Quiz Control Header */}
+          {/* quiz Control Header */}
           <div className="bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl shadow-xl p-6 mb-6 text-white">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-3xl font-bold">🎯 Quiz Active!</h2>
+                <h2 className="text-3xl font-bold">🎯 quiz Active!</h2>
                 <p className="text-lg opacity-90">
                   {currentQuestion === -1 ? 'Ready to Start' : `Question ${currentQuestion + 1} of ${questions.length}`}
                 </p>
@@ -348,9 +348,9 @@ const AdminPanel: React.FC = () => {
                   <div className="text-2xl font-bold">{students.length}</div>
                   <div className="text-sm">Players</div>
                 </div>
-                <button onClick={stopQuiz} className="bg-red-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-red-600 transition-all duration-300 flex items-center">
+                <button onClick={stopquiz} className="bg-red-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-red-600 transition-all duration-300 flex items-center">
                   <Square className="mr-2" size={20} />
-                  Stop Quiz
+                  Stop quiz
                 </button>
               </div>
             </div>
@@ -360,11 +360,11 @@ const AdminPanel: React.FC = () => {
               <h3 className="text-lg font-bold mb-2">📺 Host Screen (for projector):</h3>
               <div className="flex items-center space-x-4">
                 <code className="bg-black/20 px-3 py-2 rounded flex-1 text-sm">
-                  {window.location.origin}/host?quizId={createdQuizId}&code={quizCode}
+                  {window.location.origin}/host?quizId={createdquizId}&code={quizCode}
                 </code>
                 <button
                   onClick={() => {
-                    const hostUrl = `${window.location.origin}/host?quizId=${createdQuizId}&code=${quizCode}`;
+                    const hostUrl = `${window.location.origin}/host?quizId=${createdquizId}&code=${quizCode}`;
                     window.open(hostUrl, '_blank');
                   }}
                   className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg whitespace-nowrap"
@@ -385,13 +385,13 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Quiz Controls */}
+          {/* quiz Controls */}
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-bold text-gray-800">Quiz Controls</h3>
+              <h3 className="text-2xl font-bold text-gray-800">quiz Controls</h3>
               <button onClick={nextQuestion} className="bg-green-500 text-white font-bold py-4 px-8 rounded-xl hover:bg-green-600 transition-all duration-300 text-lg">
                 {currentQuestion === -1 ? '🚀 Start First Question' : 
-                 currentQuestion < questions.length - 1 ? '➡️ Next Question' : '🏁 Finish Quiz'}
+                 currentQuestion < questions.length - 1 ? '➡️ Next Question' : '🏁 Finish quiz'}
               </button>
             </div>
           </div>
@@ -452,7 +452,7 @@ const AdminPanel: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Quiz Admin Panel</h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">Pekaboo Admin Panel</h1>
             <p className="text-xl text-gray-600">Create and manage your quiz questions</p>
           </div>
         </div>
@@ -462,8 +462,8 @@ const AdminPanel: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-800 mb-6">{editingIndex >= 0 ? 'Edit Question' : 'Add New Question'}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
-                <input type="text" value={quizTitle} onChange={(e) => setQuizTitle(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-400" placeholder="Enter quiz title (optional)" />
+                <label className="block text-sm font-medium text-gray-700 mb-2">quiz Title</label>
+                <input type="text" value={quizTitle} onChange={(e) => setquizTitle(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black placeholder-gray-400" placeholder="Enter quiz title (optional)" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Question</label>
@@ -511,29 +511,30 @@ const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-4 text-left">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Active Quizzes on Server</div>
-                {activeQuizzes.length === 0 ? (
+              {/* Remove or comment out this section */}
+              {/* <div className="mt-4 text-left">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Active quizzes on Server</div>
+                {activequizzes.length === 0 ? (
                   <div className="text-sm text-gray-500">No active quizzes</div>
                 ) : (
                   <ul className="list-disc list-inside text-sm text-gray-700">
-                    {activeQuizzes.map((q: any) => (
+                    {activequizzes.map((q: any) => (
                       <li key={q._id || q.title}>{q.title}</li>
                     ))}
                   </ul>
                 )}
-              </div>
+              </div> */}
 
               {error && (<div className="mt-4 text-red-600 text-sm font-medium">{error}</div>)}
-              {createdQuizId && (<div className="mt-2 text-green-700 text-sm font-medium">Saved! Quiz ID: {createdQuizId}</div>)}
+              {createdquizId && (<div className="mt-2 text-green-700 text-sm font-medium">Saved! quiz ID: {createdquizId}</div>)}
 
-              <button onClick={saveQuiz} disabled={questions.length === 0 || saving} className="w-full mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                {saving ? 'Saving...' : 'Save Quiz (Draft)'}
+              <button onClick={savequiz} disabled={questions.length === 0 || saving} className="w-full mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                {saving ? 'Saving...' : 'Save quiz (Draft)'}
               </button>
 
-              <button onClick={startQuiz} disabled={questions.length === 0 || saving} className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+              <button onClick={startquiz} disabled={questions.length === 0 || saving} className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                 <Play className="mr-2" size={24} />
-                {saving ? 'Starting...' : `Start Quiz (${questions.length} questions)`}
+                {saving ? 'Starting...' : `Start quiz (${questions.length} questions)`}
               </button>
             </div>
 

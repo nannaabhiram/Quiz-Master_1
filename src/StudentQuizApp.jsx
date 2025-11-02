@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Trophy, Clock, Smartphone, Wifi, User } from 'lucide-react';
-import { useQuiz } from './QuizContext';
+import { usequiz } from './quizContext';
 import TextToImage from './TextToImage';
 import ScreenshotProtection from './ScreenshotProtection';
 
-// Student Quiz App Component
-const StudentQuizApp = ({ onBack }) => {
+// Student quiz App Component
+const StudentquizApp = ({ onBack }) => {
   const { 
     quizState, 
-    joinQuiz, 
+    joinquiz, 
     submitAnswer, 
     students 
-  } = useQuiz();
+  } = usequiz();
   
   const [gameState, setGameState] = useState('waiting');
   const [score, setScore] = useState(0);
@@ -19,7 +19,7 @@ const StudentQuizApp = ({ onBack }) => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [playerName, setPlayerName] = useState('');
-  const [quizCode, setQuizCode] = useState('');
+  const [quizCode, setquizCode] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [finalRank, setFinalRank] = useState(0);
   const [studentId, setStudentId] = useState(null);
@@ -32,7 +32,7 @@ const StudentQuizApp = ({ onBack }) => {
     const urlParams = new URLSearchParams(window.location.search);
     const joinCode = urlParams.get('join');
     if (joinCode) {
-      setQuizCode(joinCode.toUpperCase()); // Auto-fill quiz code and convert to uppercase
+      setquizCode(joinCode.toUpperCase()); // Auto-fill quiz code and convert to uppercase
       // Clear the URL parameter
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -40,8 +40,8 @@ const StudentQuizApp = ({ onBack }) => {
 
   // Add cross-tab communication
   useEffect(() => {
-    const handleQuizStarted = (e) => {
-      console.log('Quiz started event received:', e.detail);
+    const handlequizStarted = (e) => {
+      console.log('quiz started event received:', e.detail);
       if (gameState === 'ready') {
         setGameState('playing');
         setTimeLeft(20);
@@ -60,18 +60,18 @@ const StudentQuizApp = ({ onBack }) => {
     };
 
     // Listen for custom events
-    window.addEventListener('quizStarted', handleQuizStarted);
+    window.addEventListener('quizStarted', handlequizStarted);
     window.addEventListener('questionChanged', handleQuestionChanged);
 
     return () => {
-      window.removeEventListener('quizStarted', handleQuizStarted);
+      window.removeEventListener('quizStarted', handlequizStarted);
       window.removeEventListener('questionChanged', handleQuestionChanged);
     };
   }, [gameState]);
 
   // Fix the quiz start detection logic
   useEffect(() => {
-    console.log('Quiz state check:', { 
+    console.log('quiz state check:', { 
       gameState, 
       quizActive, 
       quizStarted,
@@ -115,12 +115,12 @@ const StudentQuizApp = ({ onBack }) => {
     return () => clearTimeout(timer);
   }, [timeLeft, gameState, showResult]);
 
-  const handleJoinQuiz = () => {
+  const handleJoinquiz = () => {
     if (playerName.trim() && quizCode.trim()) {
-      // Call context joinQuiz function and get student ID
+      // Call context joinquiz function and get student ID
       const newStudentId = Date.now();
       setStudentId(newStudentId); // Store student ID
-      const success = joinQuiz(playerName, quizCode, newStudentId); // Pass student ID
+      const success = joinquiz(playerName, quizCode, newStudentId); // Pass student ID
       if (success) {
         setIsConnected(true);
         setGameState('ready');
@@ -158,14 +158,14 @@ const StudentQuizApp = ({ onBack }) => {
     }
   };
 
-  const resetQuiz = () => {
+  const resetquiz = () => {
     setGameState('waiting');
     setScore(0);
     setTimeLeft(20);
     setSelectedAnswer(null);
     setShowResult(false);
     setPlayerName('');
-    setQuizCode('');
+    setquizCode('');
     setIsConnected(false);
   };
 
@@ -192,8 +192,8 @@ const StudentQuizApp = ({ onBack }) => {
 
   const handleScreenshotDetected = () => {
     // End quiz session for this student
-    alert('Multiple screenshot attempts detected. Quiz session ended.');
-    resetQuiz();
+    alert('Multiple screenshot attempts detected. quiz session ended.');
+    resetquiz();
     onBack();
   };
 
@@ -203,30 +203,30 @@ const StudentQuizApp = ({ onBack }) => {
         <div className="w-full max-w-md">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 mb-6 text-center">
             <Smartphone className="mx-auto text-white mb-2" size={48} />
-            <h1 className="text-2xl font-bold text-white">Mobile Quiz</h1>
+            <h1 className="text-2xl font-bold text-white">Mobile quiz</h1>
             <p className="text-white opacity-90 text-sm">Join the quiz session</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-2xl p-6">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Join Quiz</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Join quiz</h2>
               <p className="text-gray-600">Enter your details to participate</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Code</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">quiz Code</label>
                 <input
                   type="text"
                   placeholder="Enter quiz code"
                   value={quizCode}
-                  onChange={(e) => setQuizCode(e.target.value.toUpperCase())}
+                  onChange={(e) => setquizCode(e.target.value.toUpperCase())}
                   className="w-full p-4 border-2 border-gray-300 rounded-xl text-lg font-semibold text-center focus:border-blue-500 focus:outline-none"
                   maxLength="6"
                 />
                 {quizCode && (
                   <p className="text-sm text-green-600 mt-1 text-center">
-                    ✓ Quiz code entered
+                    ✓ quiz code entered
                   </p>
                 )}
               </div>
@@ -244,12 +244,12 @@ const StudentQuizApp = ({ onBack }) => {
             </div>
             
             <button
-              onClick={handleJoinQuiz}
+              onClick={handleJoinquiz}
               disabled={!playerName.trim() || !quizCode.trim()}
               className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Wifi className="mr-2" size={24} />
-              Join Quiz
+              Join quiz
             </button>
 
             <button
@@ -285,14 +285,14 @@ const StudentQuizApp = ({ onBack }) => {
                 </div>
                 <div>
                   <div className="font-bold text-lg text-blue-600">{quizCode}</div>
-                  <div className="text-sm text-gray-600">Quiz Code</div>
+                  <div className="text-sm text-gray-600">quiz Code</div>
                 </div>
               </div>
             </div>
             
             <div className="animate-pulse">
               <Clock className="mx-auto text-blue-500 mb-4" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Waiting for Quiz to Start...</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Waiting for quiz to Start...</h3>
               <p className="text-gray-600">The instructor will start the quiz shortly</p>
             </div>
             
@@ -310,7 +310,7 @@ const StudentQuizApp = ({ onBack }) => {
 
             <button
               onClick={() => {
-                resetQuiz();
+                resetquiz();
                 onBack();
               }}
               className="w-full mt-6 bg-gray-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-gray-600 transition-all duration-300"
@@ -332,7 +332,7 @@ const StudentQuizApp = ({ onBack }) => {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
             <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">quiz Complete!</h2>
             <p className="text-xl text-gray-600 mb-4">Great job, {playerName}!</p>
             
             <div className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-2xl p-6 mb-6">
@@ -359,16 +359,16 @@ const StudentQuizApp = ({ onBack }) => {
             
             <div className="space-y-3">
               <button
-                onClick={resetQuiz}
+                onClick={resetquiz}
                 className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 flex items-center justify-center"
               >
                 <Play className="mr-2" size={24} />
-                Join Another Quiz
+                Join Another quiz
               </button>
               
               <button
                 onClick={() => {
-                  resetQuiz();
+                  resetquiz();
                   onBack();
                 }}
                 className="w-full bg-gray-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-gray-600 transition-all duration-300"
@@ -485,4 +485,4 @@ const StudentQuizApp = ({ onBack }) => {
   return null;
 };
 
-export default StudentQuizApp;
+export default StudentquizApp;

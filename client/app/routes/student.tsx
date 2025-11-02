@@ -3,7 +3,7 @@ import Student from "../components/Student";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Quiz Student" },
+    { title: "quiz Student" },
     { name: "description", content: "Play quizzes" },
   ];
 }

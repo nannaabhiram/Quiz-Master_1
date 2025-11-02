@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Trophy, Smartphone, Wifi, User, Play } from 'lucide-react';
 
-const StudentQuizApp = () => {
+const StudentquizApp = () => {
   const [gameState, setGameState] = useState('waiting'); // waiting, ready, playing, finished, results
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
@@ -9,9 +9,9 @@ const StudentQuizApp = () => {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [playerName, setPlayerName] = useState('');
-  const [quizCode, setQuizCode] = useState('');
+  const [quizCode, setquizCode] = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [quizStarted, setQuizStarted] = useState(false);
+  const [quizStarted, setquizStarted] = useState(false);
   const [finalRank, setFinalRank] = useState(0);
 
   // Sample questions - in real app, these would come from admin
@@ -51,10 +51,10 @@ const StudentQuizApp = () => {
   // Simulate checking for quiz start
   useEffect(() => {
     if (gameState === 'ready') {
-      const checkQuizStart = setInterval(() => {
+      const checkquizStart = setInterval(() => {
         // Simulate random quiz start
         if (Math.random() > 0.97) {
-          setQuizStarted(true);
+          setquizStarted(true);
           setGameState('playing');
           setCurrentQuestion(0);
           setScore(0);
@@ -64,7 +64,7 @@ const StudentQuizApp = () => {
         }
       }, 1000);
 
-      return () => clearInterval(checkQuizStart);
+      return () => clearInterval(checkquizStart);
     }
   }, [gameState]);
 
@@ -79,13 +79,13 @@ const StudentQuizApp = () => {
     return () => clearTimeout(timer);
   }, [timeLeft, gameState, showResult]);
 
-  const joinQuiz = () => {
+  const joinquiz = () => {
     if (playerName.trim() && quizCode.trim()) {
       setIsConnected(true);
       setGameState('ready');
       // Simulate connection delay
       setTimeout(() => {
-        // Quiz is ready, waiting for admin to start
+        // quiz is ready, waiting for admin to start
       }, 1000);
     }
   };
@@ -125,13 +125,13 @@ const StudentQuizApp = () => {
       setSelectedAnswer(null);
       setShowResult(false);
     } else {
-      // Quiz finished, show personal results
+      // quiz finished, show personal results
       setFinalRank(Math.floor(Math.random() * 10) + 1);
       setGameState('finished');
     }
   };
 
-  const resetQuiz = () => {
+  const resetquiz = () => {
     setGameState('waiting');
     setCurrentQuestion(0);
     setScore(0);
@@ -139,9 +139,9 @@ const StudentQuizApp = () => {
     setSelectedAnswer(null);
     setShowResult(false);
     setPlayerName('');
-    setQuizCode('');
+    setquizCode('');
     setIsConnected(false);
-    setQuizStarted(false);
+    setquizStarted(false);
   };
 
   const getAnswerClass = (index) => {
@@ -173,24 +173,24 @@ const StudentQuizApp = () => {
         <div className="w-full max-w-md">
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-4 mb-6 text-center">
             <Smartphone className="mx-auto text-white mb-2" size={48} />
-            <h1 className="text-2xl font-bold text-white">Mobile Quiz</h1>
+            <h1 className="text-2xl font-bold text-white">Mobile quiz</h1>
             <p className="text-white opacity-90 text-sm">Join the quiz session</p>
           </div>
 
           <div className="bg-white rounded-3xl shadow-2xl p-6">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Join Quiz</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Join quiz</h2>
               <p className="text-gray-600">Enter your details to participate</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Code</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">quiz Code</label>
                 <input
                   type="text"
                   placeholder="Enter quiz code"
                   value={quizCode}
-                  onChange={(e) => setQuizCode(e.target.value)}
+                  onChange={(e) => setquizCode(e.target.value)}
                   className="w-full p-4 border-2 border-gray-300 rounded-xl text-lg font-semibold text-center focus:border-blue-500 focus:outline-none"
                   maxLength="6"
                 />
@@ -209,12 +209,12 @@ const StudentQuizApp = () => {
             </div>
             
             <button
-              onClick={joinQuiz}
+              onClick={joinquiz}
               disabled={!playerName.trim() || !quizCode.trim()}
               className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               <Wifi className="mr-2" size={24} />
-              Join Quiz
+              Join quiz
             </button>
           </div>
         </div>
@@ -244,14 +244,14 @@ const StudentQuizApp = () => {
                 </div>
                 <div>
                   <div className="font-bold text-lg text-blue-600">{quizCode}</div>
-                  <div className="text-sm text-gray-600">Quiz Code</div>
+                  <div className="text-sm text-gray-600">quiz Code</div>
                 </div>
               </div>
             </div>
             
             <div className="animate-pulse">
               <Clock className="mx-auto text-blue-500 mb-4" size={48} />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Waiting for Quiz to Start...</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Waiting for quiz to Start...</h3>
               <p className="text-gray-600">The instructor will start the quiz shortly</p>
             </div>
             
@@ -272,7 +272,7 @@ const StudentQuizApp = () => {
     );
   }
 
-  // Quiz finished - personal results
+  // quiz finished - personal results
   if (gameState === 'finished') {
     const maxScore = questions.length * 1500;
     const percentage = Math.round((score / maxScore) * 100);
@@ -282,7 +282,7 @@ const StudentQuizApp = () => {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
             <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">quiz Complete!</h2>
             <p className="text-xl text-gray-600 mb-4">Great job, {playerName}!</p>
             
             <div className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-2xl p-6 mb-6">
@@ -308,11 +308,11 @@ const StudentQuizApp = () => {
             </div>
             
             <button
-              onClick={resetQuiz}
+              onClick={resetquiz}
               className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-green-600 hover:to-blue-600 transition-all duration-300 flex items-center justify-center"
             >
               <Play className="mr-2" size={24} />
-              Join Another Quiz
+              Join Another quiz
             </button>
           </div>
         </div>
@@ -405,4 +405,4 @@ const StudentQuizApp = () => {
   );
 };
 
-export default StudentQuizApp;
+export default StudentquizApp;

@@ -10,7 +10,7 @@ export default function SocketListener() {
     const socket = getSocket(); // get or create singleton
 
     // Handler for when a quiz starts (emitted by server when admin starts a quiz)
-    function handleQuizStarted(data: any) {
+    function handlequizStarted(data: any) {
       console.log('[socket] quizStarted event received:', data);
       // Optional: navigate to host screen or update UI globally
       // Example: navigate(`/host?quizId=${data.quizId}&code=${data.code}`);
@@ -20,11 +20,11 @@ export default function SocketListener() {
     }
 
     // Register the listener
-    socket.on('quizStarted', handleQuizStarted);
+    socket.on('quizStarted', handlequizStarted);
 
     // Cleanup: remove listener when component unmounts
     return () => {
-      socket.off('quizStarted', handleQuizStarted);
+      socket.off('quizStarted', handlequizStarted);
     };
   }, []);
 

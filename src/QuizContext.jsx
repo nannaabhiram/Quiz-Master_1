@@ -1,17 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const QuizContext = createContext();
+const quizContext = createContext();
 
-export const useQuiz = () => {
-  const context = useContext(QuizContext);
+export const usequiz = () => {
+  const context = useContext(quizContext);
   if (!context) {
-    throw new Error('useQuiz must be used within a QuizProvider');
+    throw new Error('usequiz must be used within a quizProvider');
   }
   return context;
 };
 
-export const QuizProvider = ({ children }) => {
-  const [quizState, setQuizState] = useState({
+export const quizProvider = ({ children }) => {
+  const [quizState, setquizState] = useState({
     isActive: false,
     isStarted: false,
     currentQuestion: 0,
@@ -19,7 +19,7 @@ export const QuizProvider = ({ children }) => {
     quizCode: 'ABC123',
     students: [],
     showResults: false,
-    quizEnded: false
+    quiznded: false
   });
 
   // Listen for quiz state changes across tabs/windows
@@ -28,7 +28,7 @@ export const QuizProvider = ({ children }) => {
       if (e.key === 'quizState') {
         try {
           const newState = JSON.parse(e.newValue);
-          setQuizState(newState);
+          setquizState(newState);
         } catch (error) {
           console.error('Error parsing quiz state from localStorage:', error);
         }
@@ -36,23 +36,23 @@ export const QuizProvider = ({ children }) => {
     };
 
     // Listen for custom events
-    const handleQuizStarted = (e) => {
-      setQuizState(e.detail);
+    const handlequizStarted = (e) => {
+      setquizState(e.detail);
     };
 
     const handleQuestionChanged = (e) => {
-      setQuizState(e.detail);
+      setquizState(e.detail);
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('quizStarted', handleQuizStarted);
+    window.addEventListener('quizStarted', handlequizStarted);
     window.addEventListener('questionChanged', handleQuestionChanged);
     
     // Load initial state
     const savedState = localStorage.getItem('quizState');
     if (savedState) {
       try {
-        setQuizState(JSON.parse(savedState));
+        setquizState(JSON.parse(savedState));
       } catch (error) {
         console.error('Error loading quiz state from localStorage:', error);
       }
@@ -60,7 +60,7 @@ export const QuizProvider = ({ children }) => {
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('quizStarted', handleQuizStarted);
+      window.removeEventListener('quizStarted', handlequizStarted);
       window.removeEventListener('questionChanged', handleQuestionChanged);
     };
   }, []);
@@ -70,26 +70,26 @@ export const QuizProvider = ({ children }) => {
     localStorage.setItem('quizState', JSON.stringify(quizState));
   }, [quizState]);
 
-  const startQuiz = (questions) => {
+  const startquiz = (questions) => {
     const newState = {
       ...quizState,
       isActive: true,
-      isStarted: false, // Quiz is set up but not started yet
+      isStarted: false, // quiz is set up but not started yet
       questions,
       currentQuestion: 0,
       showResults: false,
-      quizEnded: false,
+      quiznded: false,
       students: [...quizState.students]
     };
-    setQuizState(newState);
+    setquizState(newState);
   };
 
-  const actuallyStartQuiz = () => {
+  const actuallyStartquiz = () => {
     const newState = {
       ...quizState,
       isStarted: true // Now the quiz actually starts
     };
-    setQuizState(newState);
+    setquizState(newState);
     
     // Broadcast to other tabs/windows
     window.dispatchEvent(new CustomEvent('quizStarted', { 
@@ -103,29 +103,29 @@ export const QuizProvider = ({ children }) => {
         ...quizState,
         currentQuestion: quizState.currentQuestion + 1
       };
-      setQuizState(newState);
+      setquizState(newState);
       
       // Broadcast to all tabs
       window.dispatchEvent(new CustomEvent('questionChanged', { 
         detail: newState 
       }));
     } else {
-      endQuiz();
+      endquiz();
     }
   };
 
-  const endQuiz = () => {
+  const endquiz = () => {
     const newState = {
       ...quizState,
       isActive: false,
       isStarted: false,
       showResults: true,
-      quizEnded: true
+      quiznded: true
     };
-    setQuizState(newState);
+    setquizState(newState);
   };
 
-  const joinQuiz = (playerName, code, studentId) => {
+  const joinquiz = (playerName, code, studentId) => {
     if (code.toLowerCase() === quizState.quizCode.toLowerCase()) {
       const existingStudent = quizState.students.find(s => s.id === studentId);
       if (existingStudent) {
@@ -143,7 +143,7 @@ export const QuizProvider = ({ children }) => {
         ...quizState,
         students: [...quizState.students, newStudent],
       };
-      setQuizState(newState);
+      setquizState(newState);
       return true;
     }
     return false;
@@ -169,10 +169,10 @@ export const QuizProvider = ({ children }) => {
           : student
       )
     };
-    setQuizState(newState);
+    setquizState(newState);
   };
 
-  const resetQuiz = () => {
+  const resetquiz = () => {
     const newState = {
       isActive: false,
       isStarted: false,
@@ -181,26 +181,26 @@ export const QuizProvider = ({ children }) => {
       quizCode: 'ABC123',
       students: [],
       showResults: false,
-      quizEnded: false
+      quiznded: false
     };
-    setQuizState(newState);
+    setquizState(newState);
   };
 
   return (
-    <QuizContext.Provider 
+    <quizContext.Provider 
       value={{
         quizState,
-        setQuizState,
-        startQuiz,
-        actuallyStartQuiz,
+        setquizState,
+        startquiz,
+        actuallyStartquiz,
         nextQuestion,
-        endQuiz,
-        joinQuiz,
+        endquiz,
+        joinquiz,
         submitAnswer,
-        resetQuiz
+        resetquiz
       }}
     >
       {children}
-    </QuizContext.Provider>
+    </quizContext.Provider>
   );
 };

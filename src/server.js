@@ -2,9 +2,11 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const os = require('os');
+const crypto = require('crypto');
 
 // Load environment variables - check both src/.env and root .env
 const srcEnvPath = path.join(__dirname, '.env');
@@ -21,6 +23,10 @@ console.log(`[env] Loaded ${usedEnv || 'no .env file found'}; has MONGO_URI: ${!
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Generate random admin path on startup
+const adminPath = crypto.randomBytes(8).toString('hex');
+app.set('adminPath', adminPath);
 
 // Trust proxy for Render HTTPS
 app.set('trust proxy', 1);
@@ -54,11 +60,13 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://localhost:3443',
+    'https://localhost:5173',
     'https://peekaboo-73vd.onrender.com',
     'https://peekaboo-73vd.onrender.com:443',
-    /^http:\/\/192\.168\.1\.\d{1,3}:5173$/, // Allow any IP in 192.168.1.x range on port 5173
-    /^http:\/\/192\.168\.1\.8:5173$/, // Your specific IP for good measure
-    'http://192.168.1.8:5173' // Also include as string for exact match
+    /^https?:\/\/192\.168\.1\.\d{1,3}:5173$/, // Allow any IP in 192.168.1.x range on port 5173
+    /^https?:\/\/192\.168\.1\.\d{1,3}:3443$/, // Allow HTTPS on port 3443
+    /^https?:\/\/192\.168\.1\.\d{1,3}:3000$/, // Allow HTTP on port 3000
   ];
   
   const origin = req.headers.origin || '';
@@ -103,19 +111,19 @@ mongoose.connection.on('reconnected', () => console.log('[mongoose] reconnected'
 mongoose.connection.on('error', (e) => console.error('[mongoose] error:', e?.message || e));
 
 // Import models
-const Quiz = require('./models/Quiz');
+const Quiz = require('./models/quiz');
 const Question = require('./models/Question');
 
 // In-memory stores
 const participants = new Map();
 const quizState = new Map();
 
-function getQuizParticipants(quizId) {
+function getquizParticipants(quizId) {
   if (!participants.has(quizId)) participants.set(quizId, new Map());
   return participants.get(quizId);
 }
 
-function getOrCreateQuizState(quizId, totalQuestions = 0) {
+function getOrCreatequizState(quizId, totalQuestions = 0) {
   if (!quizState.has(quizId)) {
     quizState.set(quizId, {
       started: false,
@@ -179,6 +187,16 @@ app.get('/api/network-info', (req, res) => {
   });
 });
 
+// Secure endpoint to get admin path (add authentication middleware in production)
+app.get('/api/admin/path', (req, res) => {
+  // TODO: Add authentication check here (JWT, session, etc.)
+  // For now, just return the path
+  res.json({ 
+    adminPath: app.get('adminPath'),
+    fullUrl: `/admin/${app.get('adminPath')}`
+  });
+});
+
 // Admin: create a new quiz
 app.post('/api/admin/quizzes', async (req, res) => {
   try {
@@ -194,7 +212,7 @@ app.post('/api/admin/quizzes', async (req, res) => {
     await Promise.race([
       newQuiz.save(),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Quiz save timeout')), timeoutMs)
+        setTimeout(() => reject(new Error('quiz save timeout')), timeoutMs)
       )
     ]);
 
@@ -220,7 +238,7 @@ app.post('/api/admin/quizzes', async (req, res) => {
     await Promise.race([
       newQuiz.save(),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Quiz update timeout')), timeoutMs)
+        setTimeout(() => reject(new Error('quiz update timeout')), timeoutMs)
       )
     ]);
 
@@ -241,15 +259,15 @@ app.put('/api/admin/quizzes/:id/start', async (req, res) => {
     console.log('Starting quiz with ID:', req.params.id);
     
     // Find the quiz
-    const quiz = await Quiz.findById(req.params.id);
-    if (!quiz) {
+    const foundQuiz = await Quiz.findById(req.params.id);
+    if (!foundQuiz) {
       console.error('Quiz not found with ID:', req.params.id);
       return res.status(404).json({ error: 'Quiz not found' });
     }
-    console.log('Found quiz:', { id: quiz._id, title: quiz.title });
+    console.log('Found quiz:', { id: foundQuiz._id, title: foundQuiz.title });
 
     // Get total questions for this quiz
-    const totalQuestions = await Question.countDocuments({ quizId: quiz._id });
+    const totalQuestions = await Question.countDocuments({ quizId: foundQuiz._id });
     console.log('Total questions found:', totalQuestions);
     
     if (totalQuestions === 0) {
@@ -260,29 +278,29 @@ app.put('/api/admin/quizzes/:id/start', async (req, res) => {
 
     try {
       // Initialize quiz state - started but no question shown yet
-      const state = getOrCreateQuizState(String(quiz._id), totalQuestions);
+      const state = getOrCreatequizState(String(foundQuiz._id), totalQuestions);
       state.started = true;
       state.currentIndex = -1; // -1 means waiting for host to show first question
       state.timeLeft = 20; // Default time per question
-      console.log('Quiz state initialized:', state);
+      console.log('quiz state initialized:', state);
 
       // Generate quiz code if not exists
-      quiz.code = quiz.code || generateCode();
-      quiz.code = quiz.code.toUpperCase();
-      quiz.status = 'active';
+      foundQuiz.code = foundQuiz.code || generateCode();
+      foundQuiz.code = foundQuiz.code.toUpperCase();
+      foundQuiz.status = 'active';
       
       console.log('Saving quiz with:', { 
-        code: quiz.code, 
-        status: quiz.status 
+        code: foundQuiz.code, 
+        status: foundQuiz.status 
       });
       
-      await quiz.save();
-      console.log('Quiz saved successfully');
+      await foundQuiz.save();
+      console.log('quiz saved successfully');
 
       // Notify all connected clients that the quiz has started
       if (io) {
         const emitData = { 
-          quizId: String(quiz._id),
+          quizId: String(foundQuiz._id),
           currentIndex: 0,
           totalQuestions
         };
@@ -291,14 +309,14 @@ app.put('/api/admin/quizzes/:id/start', async (req, res) => {
       }
 
       const response = { 
-        _id: quiz._id, 
-        title: quiz.title, 
-        status: quiz.status, 
-        code: quiz.code, 
+        _id: foundQuiz._id, 
+        title: foundQuiz.title, 
+        status: foundQuiz.status, 
+        code: foundQuiz.code, 
         total: totalQuestions 
       };
       
-      console.log('Quiz started successfully:', response);
+      console.log('quiz started successfully:', response);
       res.json(response);
       
     } catch (saveError) {
@@ -342,10 +360,10 @@ app.post('/api/student/join', async (req, res) => {
     if (!name || !code) return res.status(400).json({ error: 'name and code are required' });
 
     const lookup = String(code).trim().toUpperCase();
-    const quiz = await Quiz.findOne({ status: 'active', code: lookup }).select('_id title code');
-    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+    const foundQuiz = await Quiz.findOne({ status: 'active', code: lookup }).select('_id title code');
+    if (!foundQuiz) return res.status(404).json({ error: 'Quiz not found' });
 
-    const quizId = String(quiz._id);
+    const quizId = String(foundQuiz._id);
     
     // Get or create quiz state, but DON'T mark as started (only admin start does that)
     let state = quizState.get(quizId);
@@ -370,8 +388,8 @@ app.post('/api/student/join', async (req, res) => {
 
     res.json({ 
       quizId: quizId, 
-      title: quiz.title, 
-      code: quiz.code,
+      title: foundQuiz.title, 
+      code: foundQuiz.code,
       totalQuestions: state.totalQuestions
     });
   } catch (err) {
@@ -387,7 +405,7 @@ app.get('/api/student/quizzes/:id/state', async (req, res) => {
     const state = quizState.get(quizId);
     
     if (!state) {
-      return res.status(404).json({ error: 'Quiz not found or not started' });
+      return res.status(404).json({ error: 'quiz not found or not started' });
     }
 
     res.json({
@@ -409,7 +427,7 @@ app.get('/api/student/quizzes/:id/current-question', async (req, res) => {
     const state = quizState.get(quizId);
     
     if (!state || !state.started) {
-      return res.status(404).json({ error: 'Quiz not found or not started' });
+      return res.status(404).json({ error: 'quiz not found or not started' });
     }
 
     const questions = await Question.find({ quizId })
@@ -450,7 +468,7 @@ app.post('/api/student/answer', async (req, res) => {
     
     // Get quiz state with participants
     const state = quizState.get(pid);
-    if (!state) return res.status(404).json({ error: 'Quiz not started' });
+    if (!state) return res.status(404).json({ error: 'quiz not started' });
     
     // Get player from quiz state participants
     const player = state.participants.get(playerName);
@@ -513,12 +531,23 @@ app.put('/api/admin/quizzes/:id/next', async (req, res) => {
     
     if (!state) {
       // Initialize state if not exists
-      state = { started: true, currentIndex: 0 };
+      state = { started: true, currentIndex: 0, participants: new Map() };
       quizState.set(quizId, state);
     } else {
       // Advance to next question
       state.currentIndex += 1;
       state.started = true;
+    }
+    
+    console.log(`Quiz ${quizId} advanced to question ${state.currentIndex}`);
+    
+    // Notify all students in this quiz room that question changed
+    if (io) {
+      io.to(`quiz-${quizId}`).emit('questionChanged', {
+        quizId,
+        currentIndex: state.currentIndex
+      });
+      console.log(`Emitted questionChanged event to quiz-${quizId}`);
     }
     
     res.json({ ok: true, currentIndex: state.currentIndex });
@@ -547,17 +576,17 @@ app.get('/api/student/quiz-by-code', async (req, res) => {
     if (!code) return res.status(400).json({ error: 'code is required' });
 
     const lookup = String(code).trim().toUpperCase();
-    const quiz = await Quiz.findOne({ code: lookup }).populate('questions');
+    const foundQuiz = await Quiz.findOne({ code: lookup }).populate('questions');
     
-    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+    if (!foundQuiz) return res.status(404).json({ error: 'Quiz not found' });
 
     // Get questions with full details
-    const questions = await Question.find({ quizId: quiz._id }).select('questionText options correctAnswer points');
+    const questions = await Question.find({ quizId: foundQuiz._id }).select('questionText options correctAnswer points');
     
     res.json({
-      quizId: String(quiz._id),
-      title: quiz.title,
-      code: quiz.code,
+      quizId: String(foundQuiz._id),
+      title: foundQuiz.title,
+      code: foundQuiz.code,
       questions: questions.map(q => ({
         questionText: q.questionText,
         options: q.options,
@@ -602,20 +631,66 @@ app.use((req, res, next) => {
   return res.redirect(devServerUrl);
 });
 
-// Create HTTP server and attach Socket.IO
-const server = http.createServer(app);
+// Create HTTP/HTTPS server and attach Socket.IO
+let server;
+let isHttps = false;
+const HTTPS_PORT = 3443;
+
+// Try to load SSL certificates for HTTPS
+const certPath = path.join(__dirname, '..', 'certs', 'cert.pem');
+const keyPath = path.join(__dirname, '..', 'certs', 'key.pem');
+
+if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+  try {
+    const httpsOptions = {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath)
+    };
+    server = https.createServer(httpsOptions, app);
+    isHttps = true;
+    console.log('🔒 HTTPS enabled with SSL certificate');
+  } catch (err) {
+    console.warn('⚠️  Failed to load SSL certificate, falling back to HTTP:', err.message);
+    server = http.createServer(app);
+  }
+} else {
+  console.log('ℹ️  No SSL certificate found, using HTTP');
+  console.log('   Run "node generate-cert.js" to enable HTTPS');
+  server = http.createServer(app);
+}
 
 // Re-use same allowed origins as the CORS middleware
 const socketAllowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://localhost:3443',
+  'https://localhost:5173',
   'https://peekaboo-73vd.onrender.com',
-  'https://peekaboo-73vd.onrender.com:443'
+  'https://peekaboo-73vd.onrender.com:443',
+  /^https?:\/\/192\.168\.1\.\d{1,3}:5173$/,
+  /^https?:\/\/192\.168\.1\.\d{1,3}:3443$/,
+  /^https?:\/\/192\.168\.1\.\d{1,3}:3000$/
 ];
 
 const io = socketIO(server, {
   cors: {
-    origin: socketAllowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = socketAllowedOrigins.some(allowed => 
+        typeof allowed === 'string' 
+          ? allowed === origin 
+          : allowed.test(origin)
+      );
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.warn(`[socket] Rejected origin: ${origin}`);
+        callback(null, true); // Allow anyway for development
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   }
@@ -627,24 +702,24 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log('[io] client connected', socket.id);
   // Allow clients to join a quiz-specific room
-  socket.on('joinQuiz', (quizId) => {
+  socket.on('joinquiz', (quizId) => {
     try {
       const room = `quiz-${String(quizId)}`;
       socket.join(room);
       console.log(`[io] socket ${socket.id} joined room ${room}`);
     } catch (e) {
-      console.error('[io] joinQuiz error', e?.message || e);
+      console.error('[io] joinquiz error', e?.message || e);
     }
   });
 
   // Allow clients to leave a quiz room
-  socket.on('leaveQuiz', (quizId) => {
+  socket.on('leavequiz', (quizId) => {
     try {
       const room = `quiz-${String(quizId)}`;
       socket.leave(room);
       console.log(`[io] socket ${socket.id} left room ${room}`);
     } catch (e) {
-      console.error('[io] leaveQuiz error', e?.message || e);
+      console.error('[io] leavequiz error', e?.message || e);
     }
   });
 
@@ -652,9 +727,27 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-server.listen(PORT, '0.0.0.0', () => {
+const serverPort = isHttps ? HTTPS_PORT : PORT;
+server.listen(serverPort, '0.0.0.0', () => {
   const networkIP = getNetworkIP();
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🌐 Network access: http://${networkIP}:${PORT}`);
-  console.log(`🌍 Production URL: https://peekaboo-lp6y.onrender.com`);
+  const protocol = isHttps ? 'https' : 'http';
+  
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🚀 Server running on ${protocol}://localhost:${serverPort}`);
+  console.log(`🌐 Network access: ${protocol}://${networkIP}:${serverPort}`);
+  
+  if (isHttps) {
+    console.log(`\n🔒 HTTPS is ENABLED - Secure connections available!`);
+    console.log(`   ⚠️  Accept the self-signed certificate warning in your browser`);
+    console.log(`   📱 Mobile devices can now connect securely`);
+  } else {
+    console.log(`\n⚠️  HTTPS is DISABLED - Using HTTP (not secure)`);
+    console.log(`   To enable HTTPS, run: node generate-cert.js`);
+  }
+  
+  console.log(`\n🔐 Admin panel:`);
+  console.log(`   Local:   ${protocol}://localhost:${serverPort}/admin/${adminPath}`);
+  console.log(`   Network: ${protocol}://${networkIP}:${serverPort}/admin/${adminPath}`);
+  console.log(`\n🌍 Production URL: https://peekaboo-lp6y.onrender.com`);
+  console.log(`${'='.repeat(60)}\n`);
 });

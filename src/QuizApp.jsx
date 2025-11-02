@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Users, Clock, Smartphone } from 'lucide-react';
 import AdminPanel from './AdminPanel';
-import StudentQuizApp from './StudentQuizApp';
-import { QuizProvider } from './QuizContext';
+import StudentquizApp from './StudentquizApp';
+import { quizProvider } from './quizContext';
 
 // Main App Component with Home Page
-const QuizApp = () => {
+const quizApp = () => {
   const [currentPage, setCurrentPage] = useState('home');
 
   // Check for QR code join parameter on app load
@@ -15,7 +15,7 @@ const QuizApp = () => {
     if (joinCode) {
       // If QR code scanned, go directly to student portal
       setCurrentPage('student');
-      // Don't clear the URL parameter here - let StudentQuizApp handle it
+      // Don't clear the URL parameter here - let StudentquizApp handle it
     }
   }, []);
 
@@ -29,7 +29,7 @@ const QuizApp = () => {
               <Trophy className="text-white" size={48} />
             </div>
             <h1 className="text-5xl font-bold text-white mb-4">peekaboo</h1>
-            <p className="text-xl text-white opacity-90">Interactive Quiz Platform</p>
+            <p className="text-xl text-white opacity-90">Interactive quiz Platform</p>
           </div>
         </div>
 
@@ -117,19 +117,19 @@ const QuizApp = () => {
   switch (currentPage) {
     case 'admin':
       return (
-        <QuizProvider>
+        <quizProvider>
           <AdminPanel onBack={() => setCurrentPage('home')} />
-        </QuizProvider>
+        </quizProvider>
       );
     case 'student':
       return (
-        <QuizProvider>
-          <StudentQuizApp onBack={() => setCurrentPage('home')} />
-        </QuizProvider>
+        <quizProvider>
+          <StudentquizApp onBack={() => setCurrentPage('home')} />
+        </quizProvider>
       );
     default:
       return <HomePage />;
   }
 };
 
-export default QuizApp;
+export default quizApp;

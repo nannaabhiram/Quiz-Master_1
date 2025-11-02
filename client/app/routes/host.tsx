@@ -4,7 +4,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Quiz Host Screen" },
+    { title: "quiz Host Screen" },
     { name: "description", content: "Host screen for projector display" },
   ];
 }

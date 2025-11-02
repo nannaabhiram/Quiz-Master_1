@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Play, Square, Users, Trophy, Clock, Edit3 } from 'lucide-react';
-import { useQuiz } from './QuizContext';
+import { usequiz } from './quizContext';
 import TextToImage from './TextToImage';
 import QRCode from 'qrcode';
 
@@ -8,13 +8,13 @@ import QRCode from 'qrcode';
 const AdminPanel = ({ onBack }) => {
   const { 
     quizState, 
-    setQuizState,
-    startQuiz,
-    actuallyStartQuiz, // Add this function from context
+    setquizState,
+    startquiz,
+    actuallyStartquiz, // Add this function from context
     nextQuestion: nextQuestionContext, 
-    endQuiz: endQuizContext, 
-    resetQuiz: resetQuizContext,
-  } = useQuiz();
+    endquiz: endquizContext, 
+    resetquiz: resetquizContext,
+  } = usequiz();
 
   const questions = quizState.questions;
   
@@ -60,7 +60,7 @@ const AdminPanel = ({ onBack }) => {
       } else {
         updatedQuestions = [...questions, { ...newQuestion }];
       }
-      setQuizState(prev => ({ ...prev, questions: updatedQuestions }));
+      setquizState(prev => ({ ...prev, questions: updatedQuestions }));
       setEditingIndex(-1);
       setNewQuestion({
         question: '',
@@ -73,7 +73,7 @@ const AdminPanel = ({ onBack }) => {
 
   const deleteQuestion = (index) => {
     const updatedQuestions = questions.filter((_, i) => i !== index);
-    setQuizState(prev => ({ ...prev, questions: updatedQuestions }));
+    setquizState(prev => ({ ...prev, questions: updatedQuestions }));
   };
 
   const editQuestion = (index) => {
@@ -81,9 +81,9 @@ const AdminPanel = ({ onBack }) => {
     setEditingIndex(index);
   };
 
-  const handleStartQuiz = () => {
+  const handleStartquiz = () => {
     if (questions.length > 0) {
-      startQuiz(questions); // This sets up the quiz for students to join
+      startquiz(questions); // This sets up the quiz for students to join
     }
   };
 
@@ -91,7 +91,7 @@ const AdminPanel = ({ onBack }) => {
     // If quiz is active but not started, start it
     if (quizActive && !quizState.isStarted) {
       console.log('Actually starting the quiz now');
-      actuallyStartQuiz(); // Use the context function instead of setQuizState
+      actuallyStartquiz(); // Use the context function instead of setquizState
     } 
     // If quiz is started and not on last question, go to next
     else if (quizState.isStarted && currentQuestion < questions.length - 1) {
@@ -99,12 +99,12 @@ const AdminPanel = ({ onBack }) => {
     } 
     // If on last question, end quiz
     else {
-      handleStopQuiz();
+      handleStopquiz();
     }
   };
 
-  const handleStopQuiz = () => {
-    endQuizContext();
+  const handleStopquiz = () => {
+    endquizContext();
   };
 
   const updateQuestionField = (field, value) => {
@@ -118,8 +118,8 @@ const AdminPanel = ({ onBack }) => {
   };
 
   const resetToHome = () => {
-    setQuizState(prev => ({ ...prev, showResults: false, students: [] }));
-    resetQuizContext();
+    setquizState(prev => ({ ...prev, showResults: false, students: [] }));
+    resetquizContext();
     onBack();
   };
 
@@ -130,7 +130,7 @@ const AdminPanel = ({ onBack }) => {
           <div className="bg-white rounded-3xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">Quiz Results</h1>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">quiz Results</h1>
               <p className="text-xl text-gray-600">Final Leaderboard</p>
             </div>
 
@@ -163,12 +163,12 @@ const AdminPanel = ({ onBack }) => {
             <div className="text-center mt-8 space-x-4">
               <button
                 onClick={() => {
-                  setQuizState(prev => ({ ...prev, showResults: false, students: [] }));
-                  resetQuizContext();
+                  setquizState(prev => ({ ...prev, showResults: false, students: [] }));
+                  resetquizContext();
                 }}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold py-3 px-8 rounded-xl text-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
               >
-                Create New Quiz
+                Create New quiz
               </button>
               <button
                 onClick={resetToHome}
@@ -191,7 +191,7 @@ const AdminPanel = ({ onBack }) => {
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Quiz Active</h2>
+                <h2 className="text-2xl font-bold text-gray-800">quiz Active</h2>
                 <p className="text-gray-600">Question {currentQuestion + 1} of {questionsFromContext.length}</p>
               </div>
               <div className="flex items-center space-x-4">
@@ -203,15 +203,15 @@ const AdminPanel = ({ onBack }) => {
                   onClick={handleNextQuestion}
                   className="bg-green-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-green-600 transition-all duration-300"
                 >
-                  {!quizState.isStarted ? 'Start Quiz' : 
-                   currentQuestion < questionsFromContext.length - 1 ? 'Next Question' : 'End Quiz'}
+                  {!quizState.isStarted ? 'Start quiz' : 
+                   currentQuestion < questionsFromContext.length - 1 ? 'Next Question' : 'End quiz'}
                 </button>
                 <button
-                  onClick={handleStopQuiz}
+                  onClick={handleStopquiz}
                   className="bg-red-500 text-white font-bold py-3 px-6 rounded-xl hover:bg-red-600 transition-all duration-300 flex items-center"
                 >
                   <Square className="mr-2" size={20} />
-                  Stop Quiz
+                  Stop quiz
                 </button>
                 <button
                   onClick={resetToHome}
@@ -223,9 +223,9 @@ const AdminPanel = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Updated Quiz Code Display Section with QR Code */}
+          {/* Updated quiz Code Display Section with QR Code */}
           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl shadow-xl p-6 mb-6 text-center">
-            <h3 className="text-2xl font-bold text-white mb-4">Students Join Quiz</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">Students Join quiz</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* QR Code Section */}
@@ -233,7 +233,7 @@ const AdminPanel = ({ onBack }) => {
                 <h4 className="text-lg font-bold text-white mb-3">Scan QR Code</h4>
                 {qrCodeUrl && (
                   <div className="bg-white p-4 rounded-lg inline-block">
-                    <img src={qrCodeUrl} alt="Quiz QR Code" className="w-32 h-32 mx-auto" />
+                    <img src={qrCodeUrl} alt="quiz QR Code" className="w-32 h-32 mx-auto" />
                   </div>
                 )}
                 <p className="text-white text-sm mt-2">Scan with mobile device</p>
@@ -327,7 +327,7 @@ const AdminPanel = ({ onBack }) => {
         <div className="bg-white rounded-3xl shadow-2xl p-8 mb-8">
           <div className="flex justify-between items-center">
             <div className="text-center flex-1">
-              <h1 className="text-4xl font-bold text-gray-800 mb-4">Quiz Admin Panel</h1>
+              <h1 className="text-4xl font-bold text-gray-800 mb-4">quiz</h1>
               <p className="text-xl text-gray-600">Create and manage your quiz questions</p>
             </div>
             <button
@@ -438,12 +438,12 @@ const AdminPanel = ({ onBack }) => {
               </div>
 
               <button
-                onClick={handleStartQuiz}
+                onClick={handleStartquiz}
                 disabled={questions.length === 0}
                 className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-xl text-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 <Play className="mr-2" size={24} />
-                Start Quiz ({questions.length} questions)
+                Start quiz ({questions.length} questions)
               </button>
             </div>
 

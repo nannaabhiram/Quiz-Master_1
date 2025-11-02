@@ -2,14 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Trophy, Smartphone, Wifi, User, Play } from 'lucide-react';
 import { getApiBase } from '../utils/api-config';
+import { getSocket } from '../utils/socket';
 
 let API_BASE = '';
 
 const Student: React.FC = () => {
   const [screen, setScreen] = useState<'join' | 'waiting' | 'question' | 'results' | 'final'>('join');
   const [name, setName] = useState('');
-  const [quizCode, setQuizCode] = useState('');
-  const [quizId, setQuizId] = useState('');
+  const [quizCode, setquizCode] = useState('');
+  const [quizId, setquizId] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -34,8 +35,8 @@ const Student: React.FC = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const codeFromUrl = urlParams.get('code');
       if (codeFromUrl) {
-        setQuizCode(codeFromUrl.toUpperCase());
-        showToast('Quiz code filled from QR scan! Enter your name to join.', 'success');
+        setquizCode(codeFromUrl.toUpperCase());
+        showToast('quiz code filled from QR scan! Enter your name to join.', 'success');
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -46,7 +47,7 @@ const Student: React.FC = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const joinQuiz = async () => {
+  const joinquiz = async () => {
     if (!name.trim() || !quizCode.trim()) {
       showToast('Please enter your name and quiz code', 'error');
       return;
@@ -61,10 +62,14 @@ const Student: React.FC = () => {
 
       if (res.ok) {
         const data = await res.json();
-        setQuizId(data.quizId);
+        setquizId(data.quizId);
         setScreen('waiting');
         showToast('Successfully joined! Waiting for quiz to start...', 'success');
-        pollForQuizStart(data.quizId);
+        pollForquizStart(data.quizId);
+        
+        // Join the quiz room via socket for real-time updates
+        const socket = getSocket();
+        socket.emit('joinQuiz', data.quizId);
       } else {
         const error = await res.json();
         showToast(error.error || 'Failed to join quiz', 'error');
@@ -74,7 +79,7 @@ const Student: React.FC = () => {
     }
   };
 
-  const pollForQuizStart = async (id: string) => {
+  const pollForquizStart = async (id: string) => {
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/api/student/quizzes/${id}/state`);
@@ -108,7 +113,7 @@ const Student: React.FC = () => {
           setScreen('final');
         }
       } else if (res.status === 404) {
-        // Quiz finished
+        // quiz finished
         setScreen('final');
       }
     } catch (error) {
@@ -170,10 +175,36 @@ const Student: React.FC = () => {
     }
   }, [showResult, quizId, currentQuestion]);
 
+  // Listen for real-time question changes via Socket.IO
+  useEffect(() => {
+    if (!quizId) return;
+
+    const socket = getSocket();
+    
+    const handleQuestionChanged = (data: any) => {
+      console.log('[socket] questionChanged event received:', data);
+      if (data.quizId === quizId) {
+        // Fetch the new question
+        fetchCurrentQuestion(quizId);
+        showToast('New question!', 'info');
+      }
+    };
+
+    socket.on('questionChanged', handleQuestionChanged);
+
+    return () => {
+      socket.off('questionChanged', handleQuestionChanged);
+    };
+  }, [quizId]);
+
   useEffect(() => {
     if (screen === 'question' && timeLeft > 0 && !isAnswered) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
+    } else if (screen === 'question' && timeLeft === 0 && !isAnswered) {
+      // Time ran out - mark as answered to disable buttons
+      setIsAnswered(true);
+      showToast('Time is up!', 'error');
     }
   }, [screen, timeLeft, isAnswered]);
 
@@ -186,7 +217,7 @@ const Student: React.FC = () => {
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <Smartphone className="mx-auto mb-4 text-purple-600" size={64} />
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">Join Quiz</h1>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Join quiz</h1>
             <p className="text-gray-600">Enter your details to participate</p>
           </div>
 
@@ -203,11 +234,11 @@ const Student: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Code</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">quiz Code</label>
               <input
                 type="text"
                 value={quizCode}
-                onChange={(e) => setQuizCode(e.target.value.toUpperCase())}
+                onChange={(e) => setquizCode(e.target.value.toUpperCase())}
                 placeholder="Enter quiz code"
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-purple-500 focus:outline-none uppercase"
                 maxLength={6}
@@ -215,10 +246,10 @@ const Student: React.FC = () => {
             </div>
 
             <button
-              onClick={joinQuiz}
+              onClick={joinquiz}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105"
             >
-              Join Quiz
+              Join quiz
             </button>
           </div>
         </div>
@@ -255,16 +286,24 @@ const Student: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 text-center max-w-md mx-auto">
+          {/* Timer Display */}
+          <div className="mb-6">
+            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full ${timeLeft <= 5 ? 'bg-red-500 animate-pulse' : 'bg-white/20'} backdrop-blur-sm`}>
+              <Clock className="text-white mr-2" size={24} />
+              <span className="text-3xl font-bold text-white">{timeLeft}</span>
+            </div>
+          </div>
+
           <Play className="mx-auto mb-4 text-purple-600 animate-bounce" size={64} />
-          <h2 className="text-3xl font-bold text-purple-700 mb-4">Quiz in Progress</h2>
+          <h2 className="text-3xl font-bold text-purple-700 mb-4">quiz in Progress</h2>
           <p className="text-xl text-gray-700 mb-4">Please watch the host screen for the question and options.<br/>Tap your answer below.</p>
           <div className="grid grid-cols-2 gap-6 mt-8">
             {[0,1,2,3].map((index) => (
               <button
                 key={index}
                 onClick={() => submitAnswer(index)}
-                disabled={isAnswered}
-                className={`${colors[index]} rounded-2xl p-8 text-center transform transition-all duration-300 ${isAnswered ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'} ${selectedAnswer === index ? 'ring-4 ring-white' : ''}`}
+                disabled={isAnswered || timeLeft === 0}
+                className={`${colors[index]} rounded-2xl p-8 text-center transform transition-all duration-300 ${(isAnswered || timeLeft === 0) ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105'} ${selectedAnswer === index ? 'ring-4 ring-white' : ''}`}
               >
                 <div className="text-white">
                   <div className="text-6xl mb-4">{shapes[index]}</div>
@@ -275,7 +314,7 @@ const Student: React.FC = () => {
           </div>
           {isAnswered && (
             <div className="mt-6 p-4 rounded-xl bg-purple-100 text-purple-700 font-bold text-xl">
-              Answer submitted!
+              {timeLeft === 0 && selectedAnswer === null ? 'Time is up!' : 'Answer submitted!'}
             </div>
           )}
         </div>
@@ -288,7 +327,7 @@ const Student: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-2xl p-8 text-center max-w-md w-full">
           <Trophy className="mx-auto text-yellow-500 mb-4" size={64} />
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Quiz Complete!</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">quiz Complete!</h2>
           <p className="text-xl text-gray-600 mb-4">Great job, {name}!</p>
           <div className="bg-gray-50 rounded-2xl p-6 mb-6">
             <div className="text-4xl font-bold text-blue-600 mb-2">{score}</div>

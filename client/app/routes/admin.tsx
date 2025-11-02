@@ -4,7 +4,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Quiz Admin" },
+    { title: "quiz Admin" },
     { name: "description", content: "Create and manage quizzes" },
   ];
 }
