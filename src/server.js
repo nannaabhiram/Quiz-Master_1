@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const http = require('http');
-const https = require('https');
 const socketIO = require('socket.io');
 const mongoose = require('mongoose');
 const os = require('os');
@@ -60,13 +59,10 @@ app.use((req, res, next) => {
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    'https://localhost:3443',
-    'https://localhost:5173',
     'https://peekaboo-73vd.onrender.com',
     'https://peekaboo-73vd.onrender.com:443',
-    /^https?:\/\/192\.168\.1\.\d{1,3}:5173$/, // Allow any IP in 192.168.1.x range on port 5173
-    /^https?:\/\/192\.168\.1\.\d{1,3}:3443$/, // Allow HTTPS on port 3443
-    /^https?:\/\/192\.168\.1\.\d{1,3}:3000$/, // Allow HTTP on port 3000
+    /^http:\/\/192\.168\.1\.\d{1,3}:5173$/, // Allow any IP in 192.168.1.x range on port 5173
+    /^http:\/\/192\.168\.1\.\d{1,3}:3000$/, // Allow HTTP on port 3000
   ];
   
   const origin = req.headers.origin || '';
@@ -631,45 +627,17 @@ app.use((req, res, next) => {
   return res.redirect(devServerUrl);
 });
 
-// Create HTTP/HTTPS server and attach Socket.IO
-let server;
-let isHttps = false;
-const HTTPS_PORT = 3443;
-
-// Try to load SSL certificates for HTTPS
-const certPath = path.join(__dirname, '..', 'certs', 'cert.pem');
-const keyPath = path.join(__dirname, '..', 'certs', 'key.pem');
-
-if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-  try {
-    const httpsOptions = {
-      key: fs.readFileSync(keyPath),
-      cert: fs.readFileSync(certPath)
-    };
-    server = https.createServer(httpsOptions, app);
-    isHttps = true;
-    console.log('🔒 HTTPS enabled with SSL certificate');
-  } catch (err) {
-    console.warn('⚠️  Failed to load SSL certificate, falling back to HTTP:', err.message);
-    server = http.createServer(app);
-  }
-} else {
-  console.log('ℹ️  No SSL certificate found, using HTTP');
-  console.log('   Run "node generate-cert.js" to enable HTTPS');
-  server = http.createServer(app);
-}
+// Create HTTP server and attach Socket.IO
+const server = http.createServer(app);
 
 // Re-use same allowed origins as the CORS middleware
 const socketAllowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://localhost:3443',
-  'https://localhost:5173',
   'https://peekaboo-73vd.onrender.com',
   'https://peekaboo-73vd.onrender.com:443',
-  /^https?:\/\/192\.168\.1\.\d{1,3}:5173$/,
-  /^https?:\/\/192\.168\.1\.\d{1,3}:3443$/,
-  /^https?:\/\/192\.168\.1\.\d{1,3}:3000$/
+  /^http:\/\/192\.168\.1\.\d{1,3}:5173$/,
+  /^http:\/\/192\.168\.1\.\d{1,3}:3000$/
 ];
 
 const io = socketIO(server, {
@@ -727,27 +695,11 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const serverPort = isHttps ? HTTPS_PORT : PORT;
-server.listen(serverPort, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   const networkIP = getNetworkIP();
-  const protocol = isHttps ? 'https' : 'http';
-  
-  console.log(`\n${'='.repeat(60)}`);
-  console.log(`🚀 Server running on ${protocol}://localhost:${serverPort}`);
-  console.log(`🌐 Network access: ${protocol}://${networkIP}:${serverPort}`);
-  
-  if (isHttps) {
-    console.log(`\n🔒 HTTPS is ENABLED - Secure connections available!`);
-    console.log(`   ⚠️  Accept the self-signed certificate warning in your browser`);
-    console.log(`   📱 Mobile devices can now connect securely`);
-  } else {
-    console.log(`\n⚠️  HTTPS is DISABLED - Using HTTP (not secure)`);
-    console.log(`   To enable HTTPS, run: node generate-cert.js`);
-  }
-  
-  console.log(`\n🔐 Admin panel:`);
-  console.log(`   Local:   ${protocol}://localhost:${serverPort}/admin/${adminPath}`);
-  console.log(`   Network: ${protocol}://${networkIP}:${serverPort}/admin/${adminPath}`);
-  console.log(`\n🌍 Production URL: https://peekaboo-lp6y.onrender.com`);
-  console.log(`${'='.repeat(60)}\n`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🌐 Network access: http://${networkIP}:${PORT}`);
+  console.log(`🌍 Production URL: https://peekaboo-lp6y.onrender.com`);
+  console.log(`🔐 Admin panel: http://localhost:${PORT}/admin/${adminPath}`);
+  console.log(`🔐 Network admin: http://${networkIP}:${PORT}/admin/${adminPath}`);
 });
