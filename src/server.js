@@ -278,6 +278,8 @@ app.put('/api/admin/quizzes/:id/start', async (req, res) => {
       state.started = true;
       state.currentIndex = -1; // -1 means waiting for host to show first question
       state.timeLeft = 20; // Default time per question
+      state.questionTimeLimit = 20; // Default time limit in seconds
+      state.questionStartTime = null; // Will be set when first question is shown
       console.log('quiz state initialized:', state);
 
       // Generate quiz code if not exists
@@ -441,11 +443,20 @@ app.get('/api/student/quizzes/:id/current-question', async (req, res) => {
     // Don't send correct answer to client
     delete question.correctAnswer;
 
+    // Calculate remaining time based on server timestamp
+    const questionTimeLimit = state.questionTimeLimit || 20;
+    const elapsedSeconds = state.questionStartTime 
+      ? Math.floor((Date.now() - state.questionStartTime) / 1000)
+      : 0;
+    const timeLeft = Math.max(0, questionTimeLimit - elapsedSeconds);
+
     res.json({
       ...question,
       questionIndex: state.currentIndex,
       totalQuestions: state.totalQuestions,
-      timeLeft: state.timeLeft || 20
+      timeLeft: timeLeft,
+      serverTime: Date.now(),
+      questionStartTime: state.questionStartTime
     });
   } catch (err) {
     console.error('Error getting current question:', err);
@@ -466,6 +477,18 @@ app.post('/api/student/answer', async (req, res) => {
     const state = quizState.get(pid);
     if (!state) return res.status(404).json({ error: 'quiz not started' });
     
+    // SERVER-SIDE TIME VALIDATION: Check if time has expired based on server timestamp
+    const questionTimeLimit = state.questionTimeLimit || 20;
+    const elapsedSeconds = state.questionStartTime 
+      ? Math.floor((Date.now() - state.questionStartTime) / 1000)
+      : 0;
+    const serverTimeLeft = Math.max(0, questionTimeLimit - elapsedSeconds);
+    
+    if (serverTimeLeft === 0) {
+      console.log(`Player "${playerName}" tried to answer but time expired (server time)`);
+      return res.status(400).json({ error: 'Time expired', correct: false, score: 0 });
+    }
+    
     // Get player from quiz state participants
     const player = state.participants.get(playerName);
     if (!player) return res.status(404).json({ error: 'Player not joined' });
@@ -481,13 +504,14 @@ app.post('/api/student/answer', async (req, res) => {
     const chosen = q.options[answer];
     const isCorrect = chosen === q.correctAnswer;
     const basePoints = Number(q.points || 1000);
-    const tl = Math.max(0, Math.min(20, Number(timeLeft || 0)));
-    const speedBonus = Math.floor((tl / 20) * 500);
+    
+    // Use server-calculated time for speed bonus to prevent cheating
+    const speedBonus = Math.floor((serverTimeLeft / questionTimeLimit) * 500);
     const totalPoints = basePoints + speedBonus;
 
     if (isCorrect) {
       player.score += totalPoints;
-      console.log(`Player "${playerName}" scored ${totalPoints} points! Total: ${player.score}`);
+      console.log(`Player "${playerName}" scored ${totalPoints} points (server time: ${serverTimeLeft}s left)! Total: ${player.score}`);
     } else {
       console.log(`Player "${playerName}" answered incorrectly`);
     }
@@ -535,15 +559,28 @@ app.put('/api/admin/quizzes/:id/next', async (req, res) => {
       state.started = true;
     }
     
-    console.log(`Quiz ${quizId} advanced to question ${state.currentIndex}`);
+    // Store the timestamp when this question started
+    state.questionStartTime = Date.now();
+    state.questionTimeLimit = 20; // Default time limit in seconds
+    
+    console.log(`Quiz ${quizId} advanced to question ${state.currentIndex} at ${state.questionStartTime}`);
     
     // Notify all students in this quiz room that question changed
     if (io) {
-      io.to(`quiz-${quizId}`).emit('questionChanged', {
+      const eventData = {
         quizId,
-        currentIndex: state.currentIndex
-      });
-      console.log(`Emitted questionChanged event to quiz-${quizId}`);
+        currentIndex: state.currentIndex,
+        startTime: state.questionStartTime,
+        timeLimit: state.questionTimeLimit
+      };
+      
+      io.to(`quiz-${quizId}`).emit('questionChanged', eventData);
+      console.log(`[io] Emitted questionChanged to room quiz-${quizId}:`, eventData);
+      
+      // Log how many clients are in the room
+      const room = io.sockets.adapter.rooms.get(`quiz-${quizId}`);
+      const clientCount = room ? room.size : 0;
+      console.log(`[io] Room quiz-${quizId} has ${clientCount} connected clients`);
     }
     
     res.json({ ok: true, currentIndex: state.currentIndex });

@@ -69,7 +69,8 @@ const Student: React.FC = () => {
         
         // Join the quiz room via socket for real-time updates
         const socket = getSocket();
-        socket.emit('joinQuiz', data.quizId);
+        socket.emit('joinquiz', data.quizId);
+        console.log('[socket] Joined quiz room:', data.quizId);
       } else {
         const error = await res.json();
         showToast(error.error || 'Failed to join quiz', 'error');
@@ -104,10 +105,12 @@ const Student: React.FC = () => {
         if (data.questionText) {
           setCurrentQuestion(data);
           setScreen('question');
-          setTimeLeft(20);
+          // Use server-calculated timeLeft for accurate synchronization
+          setTimeLeft(data.timeLeft || 20);
           setIsAnswered(false);
           setShowResult(false);
           setSelectedAnswer(null);
+          console.log(`[Question] Server time left: ${data.timeLeft}s`);
         } else {
           // No more questions - quiz ended
           setScreen('final');
@@ -160,11 +163,13 @@ const Student: React.FC = () => {
             const data = await res.json();
             if (data.questionText !== currentQuestion?.questionText) {
               // New question available
+              console.log('[Poll] New question detected:', data.questionText);
               setCurrentQuestion(data);
-              setTimeLeft(20);
+              setTimeLeft(data.timeLeft || 20);
               setIsAnswered(false);
               setShowResult(false);
               setSelectedAnswer(null);
+              setScreen('question');
             }
           }
         } catch (err) {
@@ -184,27 +189,44 @@ const Student: React.FC = () => {
     const handleQuestionChanged = (data: any) => {
       console.log('[socket] questionChanged event received:', data);
       if (data.quizId === quizId) {
-        // Fetch the new question
+        // Fetch the new question (server will provide accurate timeLeft)
+        console.log('[socket] Fetching new question from server...');
         fetchCurrentQuestion(quizId);
+        
+        // Reset states for new question
+        setIsAnswered(false);
+        setShowResult(false);
+        setSelectedAnswer(null);
+        setScreen('question');
+        
         showToast('New question!', 'info');
       }
     };
 
     socket.on('questionChanged', handleQuestionChanged);
+    console.log('[socket] Listening for questionChanged events for quiz:', quizId);
 
     return () => {
       socket.off('questionChanged', handleQuestionChanged);
+      console.log('[socket] Stopped listening for questionChanged events');
     };
   }, [quizId]);
 
+  // Timer - sync with server time
   useEffect(() => {
     if (screen === 'question' && timeLeft > 0 && !isAnswered) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      const timer = setTimeout(() => {
+        setTimeLeft(prevTime => {
+          const newTime = prevTime - 1;
+          // When time runs out, mark as answered to disable buttons
+          if (newTime <= 0) {
+            setIsAnswered(true);
+            showToast('Time is up!', 'error');
+          }
+          return Math.max(0, newTime);
+        });
+      }, 1000);
       return () => clearTimeout(timer);
-    } else if (screen === 'question' && timeLeft === 0 && !isAnswered) {
-      // Time ran out - mark as answered to disable buttons
-      setIsAnswered(true);
-      showToast('Time is up!', 'error');
     }
   }, [screen, timeLeft, isAnswered]);
 
