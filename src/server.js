@@ -61,8 +61,12 @@ app.use((req, res, next) => {
     'http://localhost:3000',
     'https://peekaboo-73vd.onrender.com',
     'https://peekaboo-73vd.onrender.com:443',
-    /^http:\/\/192\.168\.1\.\d{1,3}:5173$/, // Allow any IP in 192.168.1.x range on port 5173
-    /^http:\/\/192\.168\.1\.\d{1,3}:3000$/, // Allow HTTP on port 3000
+    /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,  // 192.168.x.x network
+    /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/,
+    /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,  // 10.x.x.x network
+    /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$/,
+    /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173$/,  // 172.16-31.x.x network
+    /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:3000$/
   ];
   
   const origin = req.headers.origin || '';
@@ -191,6 +195,12 @@ app.get('/api/admin/path', (req, res) => {
     adminPath: app.get('adminPath'),
     fullUrl: `/admin/${app.get('adminPath')}`
   });
+});
+
+// Redirect /admin to the dynamic admin path (for convenience)
+app.get('/admin', (req, res) => {
+  const adminPath = app.get('adminPath');
+  res.redirect(`/admin/${adminPath}`);
 });
 
 // Admin: create a new quiz
@@ -673,8 +683,12 @@ const socketAllowedOrigins = [
   'http://localhost:3000',
   'https://peekaboo-73vd.onrender.com',
   'https://peekaboo-73vd.onrender.com:443',
-  /^http:\/\/192\.168\.1\.\d{1,3}:5173$/,
-  /^http:\/\/192\.168\.1\.\d{1,3}:3000$/
+  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,  // 192.168.x.x network
+  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/,
+  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,  // 10.x.x.x network
+  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$/,
+  /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173$/,  // 172.16-31.x.x network
+  /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:3000$/
 ];
 
 const io = socketIO(server, {
