@@ -511,21 +511,23 @@ const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Remove or comment out this section */}
+              {/* Remove this entire section */}
               {/* <div className="mt-4 text-left">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Active quizzes on Server</div>
-                {activequizzes.length === 0 ? (
+                <div className="text-sm font-semibold text-gray-700 mb-2">Active Quizzes on Server</div>
+                {activeQuizzes.length === 0 ? (
                   <div className="text-sm text-gray-500">No active quizzes</div>
                 ) : (
                   <ul className="list-disc list-inside text-sm text-gray-700">
-                    {activequizzes.map((q: any) => (
+                    {activeQuizzes.map((q: any) => (
                       <li key={q._id || q.title}>{q.title}</li>
                     ))}
                   </ul>
                 )}
               </div> */}
 
-              {error && (<div className="mt-4 text-red-600 text-sm font-medium">{error}</div>)}
+              {error && (
+                <div className="mt-4 text-red-600 text-sm font-medium">{error}</div>
+              )}
               {createdquizId && (<div className="mt-2 text-green-700 text-sm font-medium">Saved! quiz ID: {createdquizId}</div>)}
 
               <button onClick={savequiz} disabled={questions.length === 0 || saving} className="w-full mt-4 bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-lg hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -546,8 +548,24 @@ const AdminPanel: React.FC = () => {
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-medium text-gray-800 flex-1 mr-4">{q.question}</h4>
                       <div className="flex space-x-2">
-                        <button onClick={() => editQuestion(index)} className="text-blue-500 hover:text-blue-700 p-1"><Edit3 size={16} /></button>
-                        <button onClick={() => setQuestions(questions.filter((_, i) => i !== index))} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={16} /></button>
+                        <button
+                          type="button"
+                          onClick={() => editQuestion(index)}
+                          className="text-blue-500 hover:text-blue-700 p-1"
+                          title={`Edit question ${index + 1}`}
+                          aria-label={`Edit question ${index + 1}`}
+                        >
+                          <Edit3 size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuestions(questions.filter((_, i) => i !== index))}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title={`Delete question ${index + 1}`}
+                          aria-label={`Delete question ${index + 1}`}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
                       </div>
                     </div>
                     <div className="text-sm text-gray-600">Correct: {String.fromCharCode(65 + q.correct)} - {q.options[q.correct]} ({q.points} pts)</div>
