@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router';
 import AdminPanel from '../components/AdminPanel';
+import ProtectedRoute from '../components/ProtectedRoute';
 import { getApiBase } from '../utils/api-config';
 
 export default function DynamicAdminRoute() {
@@ -60,6 +61,10 @@ export default function DynamicAdminRoute() {
     );
   }
 
-  // Valid token - render admin panel
-  return <AdminPanel />;
+  // Valid token - render admin panel with authentication protection
+  return (
+    <ProtectedRoute>
+      <AdminPanel />
+    </ProtectedRoute>
+  );
 }

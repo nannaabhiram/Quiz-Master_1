@@ -101,8 +101,8 @@ mongoose
   .connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
     socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-    maxPoolSize: 10, // Maintain up to 10 socket connections
-    minPoolSize: 5, // Maintain minimum 5 socket connections
+    maxPoolSize: 20, // Increased from 10 to 20 for more concurrent students
+    minPoolSize: 2, // Reduced from 5 to 2 to save memory
   })
   .then(() => console.log('✅ Connected to MongoDB Atlas!'))
   .catch((err) => console.error('❌ Error connecting to MongoDB:', err.message || err));
