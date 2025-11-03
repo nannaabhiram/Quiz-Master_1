@@ -113,7 +113,7 @@ mongoose.connection.on('reconnected', () => console.log('[mongoose] reconnected'
 mongoose.connection.on('error', (e) => console.error('[mongoose] error:', e?.message || e));
 
 // Import models
-const Quiz = require('./models/quiz');
+const Quiz = require('./models/Quiz');
 const Question = require('./models/Question');
 
 // In-memory stores
