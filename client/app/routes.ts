@@ -7,6 +7,4 @@ export default [
   route("admin/:adminToken", "routes/admin-dynamic.tsx"), // Dynamic admin route
   route("student", "routes/student.tsx"),
   route("host", "routes/host.tsx"),
-  // Handle favicon.ico to prevent error
-  route("favicon.ico", "routes/favicon.tsx"),
 ] satisfies RouteConfig;
