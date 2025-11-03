@@ -9,10 +9,6 @@ services:
     buildCommand: npm install
     startCommand: npm run start
     envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: PORT
-        value: 3000
       # Set MONGO_URI in Render Dashboard (keep it secret!)
       - key: MONGO_URI
         sync: false
@@ -27,10 +23,6 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: PORT
-        value: 5173
       # Backend API URL for the frontend to connect to
       - key: VITE_API_BASE
         fromService:
