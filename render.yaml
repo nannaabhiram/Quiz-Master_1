@@ -1,4 +1,5 @@
 services:
+  # Backend API Server
   - type: web
     name: peekaboo-api
     env: node
@@ -10,38 +11,34 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-      # IMPORTANT: Provide this securely in Render Dashboard after creating the service.
-      # Do NOT commit real credentials into this file. Set MONGO_URI using the Render UI.
+      - key: PORT
+        value: 3000
+      # Set MONGO_URI in Render Dashboard (keep it secret!)
       - key: MONGO_URI
         sync: false
 
-  # Frontend as a static site (SPA) — build-time VITE_* vars are required so the
-  # produced JS bundle contains Firebase config and the API base URL.
-  - type: static
+  # Frontend - React Router v7 SSR App
+  - type: web
     name: peekaboo-frontend
     env: node
     rootDir: client
     plan: free
     autoDeploy: true
     buildCommand: npm install && npm run build
-    publishPath: build/client
-    # Route all requests to index.html for client-side routing
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    startCommand: npm run start
     envVars:
       - key: NODE_VERSION
         value: 20
-      # Bake the backend URL into the client bundle at build time so the SPA
-      # can call the API without a server-side injector. Render will fill this
-      # from the backend service URL.
+      - key: PORT
+        value: 5173
+      # Backend API URL for the frontend to connect to
       - key: VITE_API_BASE
         fromService:
+          type: web
           name: peekaboo-api
-          type: url
-      # Keep a runtime API_BASE too (optional) for any code that reads it at runtime
+          envVarKey: RENDER_EXTERNAL_URL
       - key: API_BASE
         fromService:
+          type: web
           name: peekaboo-api
-          type: url
+          envVarKey: RENDER_EXTERNAL_URL

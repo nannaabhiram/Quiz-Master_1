@@ -17,25 +17,35 @@ export async function getApiBase(): Promise<string> {
     // ignore
   }
 
-  // 2) Build-time environment variable
+  // 2) Build-time environment variable (for production deployment)
   try {
     const viteBase = (import.meta as any)?.env?.VITE_API_BASE;
     if (viteBase && typeof viteBase === 'string') {
-      cachedApiBase = viteBase;
+      // Handle Render's service URL format
+      const apiUrl = viteBase.startsWith('http') 
+        ? viteBase 
+        : `https://${viteBase}`;
+      cachedApiBase = apiUrl;
+      console.log('[API Config] Using VITE_API_BASE:', cachedApiBase);
       return cachedApiBase;
     }
   } catch (e) {
     // continue
   }
 
-  // 3) Dynamic detection for production
+  // 3) Dynamic detection for production and development
   if (typeof window !== 'undefined') {
     const currentHost = window.location.hostname;
-    const isRender = currentHost.includes('onrender.com');
+    const isRenderApp = currentHost.includes('onrender.com');
     
-    if (isRender) {
-      // On Render, both frontend and backend are on same domain
-      cachedApiBase = window.location.origin;
+    if (isRenderApp) {
+      // On Render, frontend and backend are separate services
+      // Frontend: peekaboo-frontend.onrender.com
+      // Backend: peekaboo-api.onrender.com
+      // Try to construct backend URL from frontend hostname
+      const backendHost = currentHost.replace('frontend', 'api');
+      cachedApiBase = `https://${backendHost}`;
+      console.log('[API Config] Detected Render deployment, using:', cachedApiBase);
       return cachedApiBase;
     } else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
       // Local development
@@ -46,7 +56,7 @@ export async function getApiBase(): Promise<string> {
     }
 
     // Test API connectivity (development only)
-    if (!isRender) {
+    if (!isRenderApp) {
       try {
         const response = await fetch(`${cachedApiBase}/health`);
         if (response.ok) return cachedApiBase;

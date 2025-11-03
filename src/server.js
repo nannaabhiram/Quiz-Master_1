@@ -61,9 +61,11 @@ app.use((req, res, next) => {
     'http://localhost:3000',
     'https://peekaboo-73vd.onrender.com',
     'https://peekaboo-73vd.onrender.com:443',
-    /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,  // 192.168.x.x network
+    /^https:\/\/peekaboo-frontend.*\.onrender\.com$/,  // Render frontend service
+    /^https:\/\/peekaboo-api.*\.onrender\.com$/,       // Render backend service
+    /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,      // 192.168.x.x network
     /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/,
-    /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,  // 10.x.x.x network
+    /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,   // 10.x.x.x network
     /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$/,
     /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173$/,  // 172.16-31.x.x network
     /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:3000$/
@@ -683,9 +685,11 @@ const socketAllowedOrigins = [
   'http://localhost:3000',
   'https://peekaboo-73vd.onrender.com',
   'https://peekaboo-73vd.onrender.com:443',
-  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,  // 192.168.x.x network
+  /^https:\/\/peekaboo-frontend.*\.onrender\.com$/,  // Render frontend service
+  /^https:\/\/peekaboo-api.*\.onrender\.com$/,       // Render backend service
+  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,      // 192.168.x.x network
   /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/,
-  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,  // 10.x.x.x network
+  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,   // 10.x.x.x network
   /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$/,
   /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173$/,  // 172.16-31.x.x network
   /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:3000$/
